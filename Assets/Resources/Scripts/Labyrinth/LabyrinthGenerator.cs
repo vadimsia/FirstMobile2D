@@ -12,25 +12,32 @@ namespace Resources.Scripts.Labyrinth
 
         void GenerateField()
         {
-            for (int row = 0; row < rows; row++) {
-                for (int col = 0; col < cols; col++) {
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
+                {
                     var cell = labyrinth.field[row, col];
+                    // Преобразуем индексы в мировые координаты: x = col, y = -row
                     LabyrinthCellPrefab obj = Instantiate(cellPrefab, new Vector2(col, -row), Quaternion.identity, transform);
                     obj.name = "R" + row + "C" + col;
-                    obj.Init(cell); 
+                    obj.Init(cell);
                 }
             }
         }
 
         void Start()
         {
-            labyrinth = new LabyrinthField(rows, cols); 
+            labyrinth = new LabyrinthField(rows, cols);
             GenerateField();
-        }
 
-        void Update()
-        {
-    
+            // Перемещаем игрока на точку старта лабиринта
+            GameObject player = GameObject.FindWithTag("Player");
+            if (player != null)
+            {
+                // Преобразуем координаты: в Instantiate мы использовали (col, -row)
+                Vector2 startPos = new Vector2(labyrinth.StartCell.y, -labyrinth.StartCell.x);
+                player.transform.position = startPos;
+            }
         }
     }
 }
