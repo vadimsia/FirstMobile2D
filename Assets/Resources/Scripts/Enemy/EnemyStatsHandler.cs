@@ -7,9 +7,7 @@ namespace Resources.Scripts.Enemy
         [SerializeField, Range(3, 15)] int damage;
 
         public int Damage {
-            get {
-                return damage;
-            }
+            get { return damage; }
         }
     }
 }
