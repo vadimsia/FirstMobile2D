@@ -13,14 +13,14 @@ namespace Resources.Scripts.GameManagers
 
         public static FirstPartGameManager singletone;
 
-        private float _sessionDelay;
-        private GameObject _player;
+        private float sessionDelay;
+        private GameObject player;
 
         private void Start()
         {
             singletone = this;
-            _sessionDelay = sessionTimer;
-            _player = GameObject.FindWithTag(ETag.Player.ToString());
+            sessionDelay = sessionTimer;
+            player = GameObject.FindWithTag(ETag.Player.ToString());
         }
 
         private void Update()
@@ -31,7 +31,7 @@ namespace Resources.Scripts.GameManagers
 
         private void UpdateCheckPlayerAlive()
         {
-            if (!_player.IsDestroyed()) {
+            if (!player.IsDestroyed()) {
                 return;
             }
 
@@ -40,15 +40,15 @@ namespace Resources.Scripts.GameManagers
 
         private void UpdateSessionTimer()
         {
-            timerLabel.text = "Timer: " + _sessionDelay.ToString("#.0");
+            timerLabel.text = "Timer: " + sessionDelay.ToString("#.0");
 
-            if (_sessionDelay <= 0)
+            if (sessionDelay <= 0)
             {
                 SceneManager.LoadScene((int)EScene.SecondPart);
             }
             else 
             {
-                _sessionDelay -= Time.deltaTime;
+                sessionDelay -= Time.deltaTime;
             }
         }
 

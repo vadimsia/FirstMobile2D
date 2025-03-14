@@ -9,11 +9,11 @@ namespace Resources.Scripts.Fairy
         [SerializeField, Range(3, 10)] private int maxFairies = 5;
         [SerializeField, Range(3, 15)] private float spawnTimer = 5f;
 
-        private float _timerDelay;
+        private float timerDelay;
     
         private void Start()
         {
-            _timerDelay = spawnTimer;
+            timerDelay = spawnTimer;
 
         }
 
@@ -32,10 +32,10 @@ namespace Resources.Scripts.Fairy
 
         private void Update()
         {
-            _timerDelay -= Time.deltaTime;
-            if (_timerDelay <= 0) {
+            timerDelay -= Time.deltaTime;
+            if (timerDelay <= 0) {
                 Spawn(fairyPrefabs[Random.Range(0, fairyPrefabs.Count - 1)]);
-                _timerDelay = spawnTimer;
+                timerDelay = spawnTimer;
             } 
         }
     }

@@ -18,7 +18,7 @@ namespace Resources.Scripts.Camera
 
         void UpdatePos()
         {
-            // Если цель отсутствует (например, персонаж уничтожен) – выходим из метода
+            // Exit method if the target is missing (e.g., character destroyed)
             if (target == null) return;
 
             Vector3 newPos = Vector3.Lerp(transform.position, target.position, Time.deltaTime * speed);

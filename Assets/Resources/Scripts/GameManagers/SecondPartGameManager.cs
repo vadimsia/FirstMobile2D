@@ -12,12 +12,12 @@ namespace Resources.Scripts.GameManagers
 
         public static SecondPartGameManager singletone;
 
-        private float _sessionDelay;
+        private float sessionDelay;
 
         private void Start()
         {
             singletone = this;
-            _sessionDelay = sessionTimer;
+            sessionDelay = sessionTimer;
         }
         
         private void Update()
@@ -27,12 +27,12 @@ namespace Resources.Scripts.GameManagers
 
         private void UpdateSessionTimer()
         {
-            timerLabel.text = "Timer: " + _sessionDelay.ToString("#.0");
+            timerLabel.text = "Timer: " + sessionDelay.ToString("#.0");
 
-            if (_sessionDelay <= 0) {
+            if (sessionDelay <= 0) {
                 SceneManager.LoadScene((int)EScene.FirstPart);
             } else {
-                _sessionDelay -= Time.deltaTime;
+                sessionDelay -= Time.deltaTime;
             }
         }
     }

@@ -4,17 +4,7 @@ namespace Resources.Scripts.Player
 {
     public class PlayerStatsHandler : MonoBehaviour
     {
-        [SerializeField] int fairyCount;
-        [SerializeField, Range(5, 50)] int health = 20;
-
-        public int FairyCount {
-            get { return fairyCount; }
-            set { fairyCount = value; }
-        }
-
-        public int Health {
-            get { return health; }
-            set { health = value; }
-        }
+        [field: SerializeField] public int FairyCount { get; set; }
+        [field: SerializeField, Range(5, 50)] public int Health { get; set; } = 20;
     }
 }
