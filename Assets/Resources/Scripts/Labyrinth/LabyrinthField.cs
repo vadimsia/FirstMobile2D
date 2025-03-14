@@ -4,49 +4,6 @@ using System.Collections.Generic;
 namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
-    /// Represents a single cell in the labyrinth grid.
-    /// </summary>
-    public class LabyrinthCell
-    {
-        // Border flags for this cell.
-        public bool TopBorder;
-        public bool RightBorder;
-        public bool BottomBorder;
-        public bool LeftBorder;
-
-        // Used to identify connected cells.
-        public int ArrayValue;
-
-        // Flags to mark special cells.
-        public bool IsStart;
-        public bool IsFinish;
-        public bool IsSolutionPath;
-
-        public LabyrinthCell()
-        {
-            TopBorder = false;
-            RightBorder = false;
-            BottomBorder = false;
-            LeftBorder = false;
-            ArrayValue = 0;
-            IsStart = false;
-            IsFinish = false;
-            IsSolutionPath = false;
-        }
-
-        /// <summary>
-        /// Copies selected properties from another cell.
-        /// </summary>
-        /// <param name="reference">Reference cell to copy from.</param>
-        public void Copy(LabyrinthCell reference)
-        {
-            RightBorder = reference.RightBorder;
-            BottomBorder = reference.BottomBorder;
-            ArrayValue = reference.ArrayValue;
-        }
-    }
-
-    /// <summary>
     /// Generates and manages the labyrinth field.
     /// </summary>
     public class LabyrinthField
@@ -362,6 +319,24 @@ namespace Resources.Scripts.Labyrinth
         public Vector3 GetFinishWorldPosition()
         {
             return new Vector3(finishCell.x, finishCell.y, 0f);
+        }
+
+        /// <summary>
+        /// Returns the solution path as a list of world positions.
+        /// The conversion assumes that when instantiating cells, the position is set as (col, -row, 0).
+        /// Since LabyrinthField uses row for x and col for y in the grid,
+        /// we convert a cell coordinate (row, col) to world position (col, -row, 0).
+        /// </summary>
+        public List<Vector3> GetSolutionPathWorldPositions()
+        {
+            List<Vector2Int> path = FindShortestPath();
+            List<Vector3> worldPath = new List<Vector3>();
+            foreach (Vector2Int cell in path)
+            {
+                // Convert: worldX = cell.y, worldY = -cell.x
+                worldPath.Add(new Vector3(cell.y, -cell.x, 0f));
+            }
+            return worldPath;
         }
     }
 }

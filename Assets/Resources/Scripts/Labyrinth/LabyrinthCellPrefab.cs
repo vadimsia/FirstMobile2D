@@ -13,7 +13,7 @@ namespace Resources.Scripts.Labyrinth
         [SerializeField] private GameObject leftBorder;
         [SerializeField] private Text arrayValueText; // Using Legacy Text
 
-        // Toggle text visibility via Inspector
+        // Toggle text visibility via Inspector.
         [SerializeField] private bool showArrayValueText = true;
         [SerializeField, Range(0f, 1f)] private float defaultTextAlpha = 0.5f;
 

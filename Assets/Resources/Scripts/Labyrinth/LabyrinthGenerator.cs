@@ -111,7 +111,7 @@ namespace Resources.Scripts.Labyrinth
         {
             labyrinth = new LabyrinthField(rows, cols);
 
-            // Find the player by tag "Player" and set its position to the start cell
+            // Find the player by tag "Player" and set its position to the start cell.
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
@@ -120,6 +120,13 @@ namespace Resources.Scripts.Labyrinth
             }
 
             GenerateField();
+
+            // Set the solution path on the minimap.
+            if (LabyrinthMapController.Instance != null)
+            {
+                List<Vector3> solutionPath = labyrinth.GetSolutionPathWorldPositions();
+                LabyrinthMapController.Instance.SetSolutionPath(solutionPath);
+            }
         }
     }
 }

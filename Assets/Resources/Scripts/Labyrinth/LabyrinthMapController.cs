@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Resources.Scripts.Labyrinth
 {
@@ -9,6 +10,7 @@ namespace Resources.Scripts.Labyrinth
     /// The map is shown at game start, and the player can toggle it via buttons.
     /// Two timer texts are displayed: one on the map panel and another on the player's panel.
     /// When the countdown expires, the minimap automatically closes.
+    /// Also synchronizes the solution path display on the minimap.
     /// </summary>
     public class LabyrinthMapController : MonoBehaviour
     {
@@ -17,11 +19,14 @@ namespace Resources.Scripts.Labyrinth
         [SerializeField] private GameObject mapDisplay; // UI panel showing the map.
         [SerializeField] private Button showMapButton;
         [SerializeField] private Button hideMapButton;
-        [SerializeField] private float toggleDuration = 10f; // Total time before auto-closing the map.
+        [SerializeField] private float toggleDuration = 100f; // Total time before auto-closing the map.
 
         // Timer texts for displaying remaining time.
         [SerializeField] private Text mapTimerText;      // Text displayed on the map panel.
         [SerializeField] private Text playerTimerText;   // Text displayed on the player's panel above the "Show Map" button.
+
+        // Reference to the solution path drawer component.
+        [SerializeField] private LabyrinthMinimapSolutionPathDrawer solutionPathDrawer;
 
         private float timer;
         private bool canToggle = true;
@@ -50,24 +55,24 @@ namespace Resources.Scripts.Labyrinth
         private void Update()
         {
             timer += Time.deltaTime;
-            // Вычисляем оставшееся время (не меньше нуля)
+            // Calculate remaining time (not less than zero)
             float remainingTime = Mathf.Max(0, toggleDuration - timer);
             int secondsRemaining = Mathf.CeilToInt(remainingTime);
 
-            // Обновляем оба текстовых поля с таймером
+            // Update both timer texts.
             if (mapTimerText != null)
                 mapTimerText.text = secondsRemaining.ToString();
             if (playerTimerText != null)
                 playerTimerText.text = secondsRemaining.ToString();
 
-            // Если время истекло и переключение ещё активно
+            // If time has expired and toggling is still active.
             if (timer >= toggleDuration && canToggle)
             {
-                // Закрываем миникарту
+                // Close the minimap.
                 if (mapDisplay != null)
                     mapDisplay.SetActive(false);
 
-                // Удаляем кнопку "Show Map"
+                // Remove the "Show Map" button.
                 if (showMapButton != null)
                     Destroy(showMapButton.gameObject);
 
@@ -91,6 +96,18 @@ namespace Resources.Scripts.Labyrinth
         {
             if (canToggle && mapDisplay != null)
                 mapDisplay.SetActive(true);
+        }
+
+        /// <summary>
+        /// Sets the solution path on the minimap by passing a list of world positions to the path drawer.
+        /// </summary>
+        /// <param name="positions">List of world-space positions representing the solution path.</param>
+        public void SetSolutionPath(List<Vector3> positions)
+        {
+            if (solutionPathDrawer != null)
+            {
+                solutionPathDrawer.DrawSolutionPath(positions);
+            }
         }
     }
 }
