@@ -166,6 +166,10 @@ MonoBehaviour:
   rows: 20
   cols: 20
   cellPrefab: {fileID: 245492848745350129, guid: 8c70a7e90a3315d459e028a87aa2f6b2, type: 3}
+  bonusPrefab: {fileID: 4851787157202972978, guid: 8a0a50a60819e014388d53fd15014872, type: 3}
+  bonusCount: 5
+  trapPrefab: {fileID: 4432862800593702859, guid: aa8d140e969d673499c9788afe79c39a, type: 3}
+  trapCount: 10
 --- !u!1001 &303282576
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -186,6 +190,18 @@ PrefabInstance:
       propertyPath: joystick
       value: 
       objectReference: {fileID: 1367813210}
+    - target: {fileID: 3997978414173444296, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
+      propertyPath: playerLight
+      value: 
+      objectReference: {fileID: 303282577}
+    - target: {fileID: 3997978414173444296, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
+      propertyPath: maxLightRange
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3997978414173444296, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
+      propertyPath: baseLightRange
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7109463011209514100, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
       propertyPath: cooldownText
       value: 
@@ -193,6 +209,14 @@ PrefabInstance:
     - target: {fileID: 7109463011209514100, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
       propertyPath: cooldownFillImage
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8096458102611521005, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
+      propertyPath: m_Intensity
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8096458102611521005, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
+      propertyPath: m_PointLightOuterRadius
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8453463847930933388, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
       propertyPath: m_LocalPosition.x
@@ -241,6 +265,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
+--- !u!114 &303282577 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8096458102611521005, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
+  m_PrefabInstance: {fileID: 303282576}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &483433526
 GameObject:
   m_ObjectHideFlags: 0

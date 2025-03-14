@@ -322,6 +322,8 @@ MonoBehaviour:
   bottomBorder: {fileID: 8471816224594578542}
   leftBorder: {fileID: 561811643673796020}
   arrayValueText: {fileID: 4015086256303918597}
+  showArrayValueText: 0
+  defaultTextAlpha: 0.5
 --- !u!1 &8253383865073675089
 GameObject:
   m_ObjectHideFlags: 0
@@ -750,7 +752,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.0627451}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
