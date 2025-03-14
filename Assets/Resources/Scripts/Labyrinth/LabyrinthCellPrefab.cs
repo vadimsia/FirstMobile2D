@@ -36,7 +36,7 @@ namespace Resources.Scripts.Labyrinth
         /// <param name="cell">The labyrinth cell data.</param>
         public void Init(LabyrinthCell cell)
         {
-            // Remove borders that are not present, otherwise enable shadow casting.
+            // Remove borders that are not present; otherwise add shadow caster if missing.
             if (!cell.TopBorder)
             {
                 Destroy(topBorder);
@@ -85,7 +85,7 @@ namespace Resources.Scripts.Labyrinth
                 arrayValueText.color = new Color(1f, 0f, 0f, defaultTextAlpha);
                 isFinishCell = true;
 
-                // Tag this GameObject as "Finish" so the PlayerController can find it.
+                // Tag this GameObject as "Finish" for the PlayerController.
                 gameObject.tag = "Finish";
             }
             else if (cell.IsSolutionPath)
@@ -106,7 +106,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Updates the visibility of the arrayValueText based on the inspector setting.
+        /// Updates the visibility of the text based on the inspector setting.
         /// </summary>
         private void UpdateTextVisibility()
         {

@@ -8,16 +8,16 @@ namespace Resources.Scripts.Labyrinth
     /// </summary>
     public class LabyrinthCell
     {
-        // Border flags for this cell
+        // Border flags for this cell.
         public bool TopBorder;
         public bool RightBorder;
         public bool BottomBorder;
         public bool LeftBorder;
 
-        // Used to identify connected cells
+        // Used to identify connected cells.
         public int ArrayValue;
 
-        // Flags to mark special cells
+        // Flags to mark special cells.
         public bool IsStart;
         public bool IsFinish;
         public bool IsSolutionPath;
@@ -171,7 +171,7 @@ namespace Resources.Scripts.Labyrinth
         /// </summary>
         private void ProcessRow(int row)
         {
-            // Assign unique array values where needed
+            // Assign unique array values where needed.
             for (int col = 0; col < Cols; col++)
             {
                 var cell = Field[row, col];
@@ -179,7 +179,7 @@ namespace Resources.Scripts.Labyrinth
                     cell.ArrayValue = uniqueCounter++;
             }
 
-            // Decide right borders and merge cells
+            // Decide right borders and merge cells.
             for (int col = 0; col < Cols - 1; col++)
             {
                 var cell = Field[row, col];
@@ -199,7 +199,7 @@ namespace Resources.Scripts.Labyrinth
                 }
             }
 
-            // Decide bottom borders randomly if allowed
+            // Decide bottom borders randomly if allowed.
             for (int col = 0; col < Cols; col++)
             {
                 var cell = Field[row, col];
@@ -272,7 +272,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Marks the solution path (shortest path) in the labyrinth using Breadth-First Search (BFS).
+        /// Marks the solution path in the labyrinth using Breadth-First Search (BFS).
         /// </summary>
         private void SolveMaze()
         {
@@ -293,7 +293,7 @@ namespace Resources.Scripts.Labyrinth
             bool[,] visited = new bool[Rows, Cols];
             Vector2Int[,] prev = new Vector2Int[Rows, Cols];
 
-            // Initialize previous positions
+            // Initialize previous positions.
             for (int i = 0; i < Rows; i++)
                 for (int j = 0; j < Cols; j++)
                     prev[i, j] = new Vector2Int(-1, -1);
@@ -337,7 +337,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Returns the accessible neighbor cells for the cell at the specified row and column.
+        /// Returns the accessible neighbors for the cell at the specified row and column.
         /// </summary>
         private List<Vector2Int> GetNeighbors(int row, int col)
         {

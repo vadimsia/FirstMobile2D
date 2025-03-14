@@ -6,15 +6,17 @@ TagManager:
   tags:
   - Fairy
   - Enemy
+  - PlayerLight
+  - MiniMapLight
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Labyrinth
   - Water
   - UI
-  - 
-  - 
+  - MiniMapLight
+  - PlayerLight
   - 
   - 
   - 
