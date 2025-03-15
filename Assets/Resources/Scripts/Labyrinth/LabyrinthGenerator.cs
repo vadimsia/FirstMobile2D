@@ -5,25 +5,35 @@ namespace Resources.Scripts.Labyrinth
 {
     public class LabyrinthGenerator : MonoBehaviour
     {
-        [SerializeField, Range(4, 20)] int rows = 5;
-        [SerializeField, Range(4, 20)] int cols = 5;
-        [SerializeField] LabyrinthCellPrefab cellPrefab;
+        [SerializeField, Range(4, 20)]
+        private int rows = 5;
+        [SerializeField, Range(4, 20)]
+        private int cols = 5;
+        [SerializeField]
+        private LabyrinthCellPrefab cellPrefab;
 
-        // Public variables for bonus and trap settings
+        // Bonus and Trap Settings
         [Header("Bonus and Trap Settings")]
-        [SerializeField] GameObject bonusPrefab; // Bonus prefab (with BonusEffect)
-        [SerializeField] int bonusCount = 1;     // Number of bonuses to place
-        [SerializeField] GameObject trapPrefab;  // Trap prefab (with TrapEffect)
-        [SerializeField] int trapCount = 3;      // Number of traps
+        [SerializeField]
+        private GameObject bonusPrefab;
+        [SerializeField]
+        private int bonusCount = 1;
+        [SerializeField]
+        private GameObject trapPrefab;
+        [SerializeField]
+        private int trapCount = 3;
 
-        LabyrinthField labyrinth;
+        private LabyrinthField labyrinth;
 
-        void GenerateField()
+        /// <summary>
+        /// Generates the labyrinth field and instantiates cell objects.
+        /// </summary>
+        private void GenerateField()
         {
             List<GameObject> solutionCells = new List<GameObject>();
             List<GameObject> nonSolutionCells = new List<GameObject>();
 
-            // Instantiate all labyrinth cells
+            // Instantiate labyrinth cells
             for (int row = 0; row < rows; row++)
             {
                 for (int col = 0; col < cols; col++)
@@ -33,7 +43,7 @@ namespace Resources.Scripts.Labyrinth
                     cellObj.name = "R" + row + "C" + col;
                     cellObj.GetComponent<LabyrinthCellPrefab>().Init(cell);
 
-                    // Exclude start and finish cells from bonus and trap placement
+                    // Exclude start and finish cells from bonus/trap placement
                     if (!cell.IsStart && !cell.IsFinish)
                     {
                         if (cell.IsSolutionPath)
@@ -44,7 +54,7 @@ namespace Resources.Scripts.Labyrinth
                 }
             }
 
-            // Place bonuses with distance check
+            // Place bonus items on solution path with distance check
             if (solutionCells.Count > 0 && bonusPrefab != null && bonusCount > 0)
             {
                 List<GameObject> availableBonusCells = new List<GameObject>(solutionCells);
@@ -56,11 +66,10 @@ namespace Resources.Scripts.Labyrinth
                     Instantiate(bonusPrefab, bonusCell.transform.position, Quaternion.identity, bonusCell.transform);
                     placedBonus++;
 
-                    // Get coordinates of the selected cell (grid: row = -y, col = x)
+                    // Get grid coordinates (row = -y, col = x)
                     int gridRowBonus = Mathf.RoundToInt(-bonusCell.transform.position.y);
                     int gridColBonus = Mathf.RoundToInt(bonusCell.transform.position.x);
 
-                    // Remove from available cells those too close to the selected one
                     availableBonusCells.RemoveAll(cell =>
                     {
                         int cellRow = Mathf.RoundToInt(-cell.transform.position.y);
@@ -70,7 +79,7 @@ namespace Resources.Scripts.Labyrinth
                 }
             }
 
-            // Place traps with distance check
+            // Place traps on non-solution cells with distance check
             if (nonSolutionCells.Count > 0 && trapPrefab != null && trapCount > 0)
             {
                 List<GameObject> availableTrapCells = new List<GameObject>(nonSolutionCells);
@@ -95,11 +104,14 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        void Start()
+        /// <summary>
+        /// Initializes the labyrinth field and sets the player position to the start cell.
+        /// </summary>
+        private void Start()
         {
             labyrinth = new LabyrinthField(rows, cols);
 
-            // Find the player by tag "Player" and set its position according to the labyrinth's start cell.
+            // Find the player by tag "Player" and set its position to the start cell.
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
@@ -108,6 +120,13 @@ namespace Resources.Scripts.Labyrinth
             }
 
             GenerateField();
+
+            // Set the solution path on the minimap.
+            if (LabyrinthMapController.Instance != null)
+            {
+                List<Vector3> solutionPath = labyrinth.GetSolutionPathWorldPositions();
+                LabyrinthMapController.Instance.SetSolutionPath(solutionPath);
+            }
         }
     }
 }

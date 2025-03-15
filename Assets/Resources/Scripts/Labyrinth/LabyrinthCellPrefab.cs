@@ -1,27 +1,28 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
-using UnityEngine.Rendering.Universal; // For ShadowCaster2D
+using UnityEngine.Rendering.Universal;
 
 namespace Resources.Scripts.Labyrinth
 {
+    /// <summary>
+    /// Инициализирует внешний вид ячейки лабиринта, устанавливает бордюры и теги.
+    /// </summary>
     public class LabyrinthCellPrefab : MonoBehaviour
     {
         [SerializeField] private GameObject topBorder;
         [SerializeField] private GameObject rightBorder;
         [SerializeField] private GameObject bottomBorder;
         [SerializeField] private GameObject leftBorder;
-        [SerializeField] private Text arrayValueText; // Using Legacy Text
+        [SerializeField] private Text arrayValueText; // Компонент для отображения текста
 
-        // Toggle text visibility via Inspector
-        [SerializeField] private bool showArrayValueText = true;
-        [SerializeField, Range(0f, 1f)] private float defaultTextAlpha = 0.5f;
+        [SerializeField] private bool showArrayValueText = true;             // Отображение текста
+        [SerializeField, Range(0f, 1f)] private float defaultTextAlpha = 0.5f; // Прозрачность текста
 
         private bool isFinishCell;
 
         private void Awake()
         {
-            // Ensure the GameObject has a BoxCollider2D set as a trigger.
+            // Проверяем наличие BoxCollider2D и устанавливаем его как триггер
             BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
             if (boxCollider == null)
             {
@@ -31,61 +32,63 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Initializes the cell appearance based on the labyrinth cell data.
+        /// Обрабатывает бордюр: если он не нужен, удаляет объект (и удаляет тени);
+        /// если нужен – добавляет компонент ShadowCaster2D только если его ещё нет.
         /// </summary>
-        /// <param name="cell">The labyrinth cell data.</param>
+        /// <param name="borderObject">Объект бордюра</param>
+        /// <param name="hasBorder">Нужно ли отображать бордюр</param>
+        private void ProcessBorder(ref GameObject borderObject, bool hasBorder)
+        {
+            if (!hasBorder)
+            {
+                // Если бордюр не нужен, удаляем ShadowCaster2D, если он есть, и уничтожаем объект
+                if (borderObject != null)
+                {
+                    ShadowCaster2D sc = borderObject.GetComponent<ShadowCaster2D>();
+                    if (sc != null)
+                    {
+                        Destroy(sc);
+                    }
+                    Destroy(borderObject);
+                    borderObject = null;
+                }
+            }
+            else
+            {
+                // Если бордюр нужен, добавляем ShadowCaster2D, если его нет
+                if (borderObject != null && borderObject.GetComponent<ShadowCaster2D>() == null)
+                {
+                    borderObject.AddComponent<ShadowCaster2D>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Инициализирует внешний вид ячейки на основе данных.
+        /// </summary>
+        /// <param name="cell">Данные ячейки лабиринта</param>
         public void Init(LabyrinthCell cell)
         {
-            // Remove borders that are not present, otherwise enable shadow casting.
-            if (!cell.TopBorder)
-            {
-                Destroy(topBorder);
-            }
-            else if (topBorder != null && topBorder.GetComponent<ShadowCaster2D>() == null)
-            {
-                topBorder.AddComponent<ShadowCaster2D>();
-            }
+            // Обрабатываем бордюры
+            ProcessBorder(ref topBorder, cell.TopBorder);
+            ProcessBorder(ref rightBorder, cell.RightBorder);
+            ProcessBorder(ref bottomBorder, cell.BottomBorder);
+            ProcessBorder(ref leftBorder, cell.LeftBorder);
 
-            if (!cell.RightBorder)
-            {
-                Destroy(rightBorder);
-            }
-            else if (rightBorder != null && rightBorder.GetComponent<ShadowCaster2D>() == null)
-            {
-                rightBorder.AddComponent<ShadowCaster2D>();
-            }
-
-            if (!cell.BottomBorder)
-            {
-                Destroy(bottomBorder);
-            }
-            else if (bottomBorder != null && bottomBorder.GetComponent<ShadowCaster2D>() == null)
-            {
-                bottomBorder.AddComponent<ShadowCaster2D>();
-            }
-
-            if (!cell.LeftBorder)
-            {
-                Destroy(leftBorder);
-            }
-            else if (leftBorder != null && leftBorder.GetComponent<ShadowCaster2D>() == null)
-            {
-                leftBorder.AddComponent<ShadowCaster2D>();
-            }
-
-            // Set text and color based on cell type.
+            // Устанавливаем текст и цвет в зависимости от типа ячейки
             if (cell.IsStart)
             {
                 arrayValueText.text = "S";
                 arrayValueText.color = new Color(0f, 1f, 0f, defaultTextAlpha);
+                // Убедитесь, что тег "Start" добавлен в Tags Manager (Edit → Project Settings → Tags and Layers)
+                gameObject.tag = "Start";
             }
             else if (cell.IsFinish)
             {
                 arrayValueText.text = "F";
                 arrayValueText.color = new Color(1f, 0f, 0f, defaultTextAlpha);
                 isFinishCell = true;
-
-                // Tag this GameObject as "Finish" so the PlayerController can find it.
+                // Убедитесь, что тег "Finish" добавлен в Tags Manager (Edit → Project Settings → Tags and Layers)
                 gameObject.tag = "Finish";
             }
             else if (cell.IsSolutionPath)
@@ -106,7 +109,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Updates the visibility of the arrayValueText based on the inspector setting.
+        /// Обновляет видимость текста на основе настроек в инспекторе.
         /// </summary>
         private void UpdateTextVisibility()
         {
@@ -120,10 +123,10 @@ namespace Resources.Scripts.Labyrinth
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            // When the player reaches the finish cell, load the next scene.
+            // При столкновении с игроком загружаем следующую сцену, если это финишная ячейка
             if (isFinishCell && other.CompareTag("Player"))
             {
-                SceneManager.LoadScene("FirstPartScene");
+                UnityEngine.SceneManagement.SceneManager.LoadScene("FirstPartScene");
             }
         }
     }

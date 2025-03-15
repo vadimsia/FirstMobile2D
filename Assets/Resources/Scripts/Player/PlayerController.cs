@@ -4,6 +4,7 @@ using Resources.Scripts.Enemy;
 using Resources.Scripts.Fairy;
 using Resources.Scripts.Misc;
 using UnityEngine.Rendering.Universal; // For Light2D
+using Resources.Scripts.Labyrinth; // Для доступа к MapController
 
 namespace Resources.Scripts.Player
 {
@@ -32,14 +33,14 @@ namespace Resources.Scripts.Player
         [SerializeField]
         private Transform finishPoint; // Reference to the finish marker (assigned from labyrinth)
 
-        // Base light outer range is fixed at 1 and should not change
+        // Base light outer range is fixed at 1 and should not change.
         [SerializeField, Range(0.1f, 5f)]
         private float baseLightRange = 1f;
-        // Maximum outer range when the player is at the finish (i.e., when distance == 0)
+        // Maximum outer range when the player is at the finish.
         [SerializeField, Range(1f, 2f)]
         private float maxLightRange = 2f;
 
-        // Stores the initial distance from the player to the finish at the start
+        // Stores the initial distance from the player to the finish at the start.
         private float initialDistance = -1f;
 
         /// <summary>
@@ -49,7 +50,7 @@ namespace Resources.Scripts.Player
         {
             playerStats = GetComponent<PlayerStatsHandler>();
 
-            // If finishPoint is not assigned, start a coroutine to wait for the finish marker.
+            // If finishPoint is not assigned, wait for the finish marker.
             if (finishPoint == null)
             {
                 StartCoroutine(WaitForFinishMarker());
@@ -74,7 +75,7 @@ namespace Resources.Scripts.Player
                     Debug.Log("Finish marker found: " + finishPoint.name);
                     initialDistance = Vector2.Distance(transform.position, finishPoint.position);
                 }
-                yield return null; // Wait for the next frame
+                yield return null;
             }
         }
 
@@ -89,9 +90,14 @@ namespace Resources.Scripts.Player
 
         /// <summary>
         /// Handles player movement based on input.
+        /// Movement is disabled while the map is active.
         /// </summary>
         private void UpdateMovement()
         {
+            // Prevent movement if the map is visible.
+            if (LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
+                return;
+
             if (Input.GetKey(KeyCode.Space))
                 return;
 
@@ -110,7 +116,6 @@ namespace Resources.Scripts.Player
             if (finishPoint != null && playerLight != null && initialDistance > 0)
             {
                 float currentDistance = Vector2.Distance(transform.position, finishPoint.position);
-                // Calculate interpolation factor based on the initial distance
                 float t = 1f - Mathf.Clamp01(currentDistance / initialDistance);
                 float outerRange = Mathf.Lerp(baseLightRange, maxLightRange, t);
                 playerLight.pointLightOuterRadius = outerRange;
@@ -145,7 +150,6 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Reduces the player's health when hit by an enemy and applies a dash effect.
         /// </summary>
-        /// <param name="enemy">Enemy that inflicted damage.</param>
         public void TakeDamage(EnemyController enemy)
         {
             EnemyStatsHandler enemyStats = enemy.GetComponent<EnemyStatsHandler>();
@@ -161,7 +165,6 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Temporarily increases the player's speed as a bonus.
         /// </summary>
-        /// <param name="multiplier">Speed multiplier for bonus effect.</param>
         public void IncreaseSpeed(float multiplier)
         {
             if (bonusActive)
@@ -172,8 +175,6 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Coroutine for temporary speed increase.
         /// </summary>
-        /// <param name="multiplier">Speed multiplier.</param>
-        /// <param name="duration">Duration of bonus effect.</param>
         private IEnumerator IncreaseSpeedCoroutine(float multiplier, float duration)
         {
             bonusActive = true;
@@ -187,7 +188,6 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Stuns the player for a given duration.
         /// </summary>
-        /// <param name="duration">Duration of the stun effect.</param>
         public void Stun(float duration)
         {
             StartCoroutine(StunCoroutine(duration));
@@ -196,7 +196,6 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Coroutine for stun effect.
         /// </summary>
-        /// <param name="duration">Duration of stun effect.</param>
         private IEnumerator StunCoroutine(float duration)
         {
             currentSlowMultiplier = 0f;
@@ -207,8 +206,6 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Applies a slow effect to the player's movement for a specified duration.
         /// </summary>
-        /// <param name="slowFactor">Movement slow multiplier (0 to 1).</param>
-        /// <param name="duration">Duration of the slow effect.</param>
         public void ApplySlow(float slowFactor, float duration)
         {
             if (slowCoroutine != null)
@@ -219,8 +216,6 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Coroutine for slow effect.
         /// </summary>
-        /// <param name="slowFactor">Movement slow multiplier.</param>
-        /// <param name="duration">Duration of the slow effect.</param>
         private IEnumerator SlowEffectCoroutine(float slowFactor, float duration)
         {
             currentSlowMultiplier = slowFactor;

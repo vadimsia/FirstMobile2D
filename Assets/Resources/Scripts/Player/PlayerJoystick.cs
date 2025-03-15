@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Resources.Scripts.Labyrinth; // Для доступа к MapController
 
 namespace Resources.Scripts.Player
 {
@@ -11,11 +12,22 @@ namespace Resources.Scripts.Player
         private Vector2 inputVector = Vector2.zero;
 
         // Called when the user presses the joystick.
-        public void OnPointerDown(PointerEventData eventData) => OnDrag(eventData);
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            // Disable joystick input if map is active.
+            if (LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
+                return;
+
+            OnDrag(eventData);
+        }
 
         // Handles the dragging of the joystick.
         public void OnDrag(PointerEventData eventData)
         {
+            // Disable joystick input if map is active.
+            if (LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
+                return;
+
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(background, eventData.position,
                     eventData.pressEventCamera, out Vector2 pos))
             {
