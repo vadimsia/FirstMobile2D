@@ -29,16 +29,15 @@ namespace Resources.Scripts.Player
         // Mana properties.
         [SerializeField]
         private float maxMana = 100f;
-        // Set current mana to 0 at the start of the game.
         [SerializeField]
-        private float currentMana = 0f;
+        private float currentMana; // No need to initialize (default is 0)
         [SerializeField]
         private float manaRegenRate = 10f; // Mana regenerated per second.
 
         // Timer for delaying mana regeneration after spell usage.
-        private float manaRegenDelayTimer = 0f;
+        private float manaRegenDelayTimer; // Default value is 0
         // Delay time (in seconds) after using mana before regeneration resumes.
-        private const float manaRegenDelayAfterSpell = 2f;
+        private const float ManaRegenDelayAfterSpell = 2f;
 
         /// <summary>
         /// Gets the current mana.
@@ -83,7 +82,7 @@ namespace Resources.Scripts.Player
             {
                 currentMana -= amount;
                 // Trigger the regeneration delay after using mana.
-                manaRegenDelayTimer = manaRegenDelayAfterSpell;
+                manaRegenDelayTimer = ManaRegenDelayAfterSpell;
                 return true;
             }
             return false;

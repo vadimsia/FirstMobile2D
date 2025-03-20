@@ -43,6 +43,11 @@ namespace Resources.Scripts.Player
         // Stores the initial distance from the player to the finish at the start.
         private float initialDistance = -1f;
 
+        // Публичная переменная для бессмертия игрока.
+        [Header("Player Settings")]
+        [Tooltip("Если включено, игрок не получает урон.")]
+        public bool isImmortal = false;
+
         /// <summary>
         /// Initializes the player.
         /// </summary>
@@ -148,11 +153,15 @@ namespace Resources.Scripts.Player
         }
 
         /// <summary>
-        /// Reduces the player's health when hit by an enemy and applies a dash effect.
+        /// Reduces the player's health when hit by an enemy and applies a dash effect if enabled.
         /// </summary>
         /// <param name="enemy">Enemy controller</param>
         public void TakeDamage(EnemyController enemy)
         {
+            // Если игрок бессмертен, урон не наносится.
+            if (isImmortal)
+                return;
+
             EnemyStatsHandler enemyStats = enemy.GetComponent<EnemyStatsHandler>();
             playerStats.Health -= enemyStats.Damage;
             if (playerStats.Health <= 0)
@@ -160,7 +169,11 @@ namespace Resources.Scripts.Player
                 Die();
                 return;
             }
-            EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
+            // Отталкивание игрока выполняется только если у врага включен pushPlayer
+            if (enemy.pushPlayer)
+            {
+                EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
+            }
         }
 
         /// <summary>
