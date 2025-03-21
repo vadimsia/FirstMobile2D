@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Rendering.Universal;
 
 namespace Resources.Scripts.Labyrinth
 {
@@ -32,34 +31,17 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Обрабатывает бордюр: если он не нужен, удаляет объект (и удаляет тени);
-        /// если нужен – добавляет компонент ShadowCaster2D только если его ещё нет.
+        /// Обрабатывает бордюр: если он не нужен, отключает объект;
+        /// если нужен – включает объект.
         /// </summary>
         /// <param name="borderObject">Объект бордюра</param>
         /// <param name="hasBorder">Нужно ли отображать бордюр</param>
         private void ProcessBorder(ref GameObject borderObject, bool hasBorder)
         {
-            if (!hasBorder)
+            if (borderObject != null)
             {
-                // Если бордюр не нужен, удаляем ShadowCaster2D, если он есть, и уничтожаем объект
-                if (borderObject != null)
-                {
-                    ShadowCaster2D sc = borderObject.GetComponent<ShadowCaster2D>();
-                    if (sc != null)
-                    {
-                        Destroy(sc);
-                    }
-                    Destroy(borderObject);
-                    borderObject = null;
-                }
-            }
-            else
-            {
-                // Если бордюр нужен, добавляем ShadowCaster2D, если его нет
-                if (borderObject != null && borderObject.GetComponent<ShadowCaster2D>() == null)
-                {
-                    borderObject.AddComponent<ShadowCaster2D>();
-                }
+                // Просто включаем или отключаем объект, убирая тени полностью
+                borderObject.SetActive(hasBorder);
             }
         }
 
@@ -80,7 +62,6 @@ namespace Resources.Scripts.Labyrinth
             {
                 arrayValueText.text = "S";
                 arrayValueText.color = new Color(0f, 1f, 0f, defaultTextAlpha);
-                // Убедитесь, что тег "Start" добавлен в Tags Manager (Edit → Project Settings → Tags and Layers)
                 gameObject.tag = "Start";
             }
             else if (cell.IsFinish)
@@ -88,7 +69,6 @@ namespace Resources.Scripts.Labyrinth
                 arrayValueText.text = "F";
                 arrayValueText.color = new Color(1f, 0f, 0f, defaultTextAlpha);
                 isFinishCell = true;
-                // Убедитесь, что тег "Finish" добавлен в Tags Manager (Edit → Project Settings → Tags and Layers)
                 gameObject.tag = "Finish";
             }
             else if (cell.IsSolutionPath)
