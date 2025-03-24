@@ -5,21 +5,27 @@ namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
     /// Draws the solution path on the minimap using a LineRenderer.
-    /// Make sure this GameObject is on the "MinimapOnly" layer so that it appears only on the minimap.
+    /// Ensure this GameObject is on a layer visible only on the minimap.
     /// </summary>
     [RequireComponent(typeof(LineRenderer))]
     public class LabyrinthMinimapSolutionPathDrawer : MonoBehaviour
     {
-        [SerializeField] private Color lineColor = Color.green;
-        [SerializeField] private float lineWidth = 0.1f;
+        [Header("Line Settings")]
+        [SerializeField, Tooltip("Color of the solution path line.")]
+        private Color lineColor = Color.green;
+        [SerializeField, Tooltip("Width of the solution path line.")]
+        private float lineWidth = 0.1f;
+        [SerializeField, Tooltip("Material shader to use for the line.")]
+        private string shaderName = "Sprites/Default";
 
         private LineRenderer lineRenderer;
 
         private void Awake()
         {
             lineRenderer = GetComponent<LineRenderer>();
-            // Create a simple material for the line (using Sprites/Default shader)
-            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+            // Create a new material with the specified shader.
+            Material lineMaterial = new Material(Shader.Find(shaderName));
+            lineRenderer.material = lineMaterial;
             lineRenderer.startColor = lineColor;
             lineRenderer.endColor = lineColor;
             lineRenderer.startWidth = lineWidth;
@@ -30,7 +36,7 @@ namespace Resources.Scripts.Labyrinth
         /// <summary>
         /// Draws the solution path using a list of world-space positions.
         /// </summary>
-        /// <param name="positions">A list of positions representing the solution path.</param>
+        /// <param name="positions">List of positions representing the solution path.</param>
         public void DrawSolutionPath(List<Vector3> positions)
         {
             if (positions == null || positions.Count == 0)

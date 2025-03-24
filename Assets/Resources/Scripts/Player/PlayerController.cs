@@ -4,58 +4,60 @@ using Resources.Scripts.Enemy;
 using Resources.Scripts.Fairy;
 using Resources.Scripts.Misc;
 using UnityEngine.Rendering.Universal; // For Light2D
-using Resources.Scripts.Labyrinth;       // For accessing MapController
+using Resources.Scripts.Labyrinth;       // For accessing LabyrinthMapController
 
 namespace Resources.Scripts.Player
 {
     /// <summary>
-    /// Controls player movement, interactions, and dynamic light range based on proximity to the finish point.
+    /// Controls player movement, interactions, dynamic light range based on proximity to the finish point,
+    /// and handles animation switching.
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
-        [SerializeField, Range(1, 10)]
+        [Header("Movement Settings")]
+        [SerializeField, Range(1, 10), Tooltip("Movement speed when using keyboard input.")]
         private float keyboardSpeed = 3f;
-        [SerializeField, Range(1, 10)]
+        [SerializeField, Range(1, 10), Tooltip("Movement speed when using joystick input.")]
         private float joystickSpeed = 3f;
 
-        [SerializeField]
+        [SerializeField, Tooltip("Reference to the custom joystick component (optional).")]
         private PlayerJoystick joystick;
-        [SerializeField]
+
+        [SerializeField, Tooltip("Prefab for trap objects (if needed).")]
         private GameObject trapPrefab;
 
+        [Header("Light Settings")]
+        [SerializeField, Tooltip("Reference to the Light2D component attached to the player.")]
+        private Light2D playerLight;
+        [SerializeField, Tooltip("Reference to the finish marker transform (assigned from labyrinth).")]
+        private Transform finishPoint;
+        [SerializeField, Range(0.1f, 5f), Tooltip("Base light range (fixed value).")]
+        private float baseLightRange = 1f;
+        [SerializeField, Range(1f, 2f), Tooltip("Maximum light range when near the finish.")]
+        private float maxLightRange = 2f;
+
+        [Header("Player Settings")]
+        [Tooltip("If enabled, the player will be immune to damage.")]
+        public bool isImmortal;
+
+        [Header("Animation Settings")]
+        [SerializeField, Tooltip("Animator component for controlling player animations.")]
+        private Animator animator;
+
+        // Private variables for managing player state.
         private PlayerStatsHandler playerStats;
+        private SpriteRenderer spriteRenderer;
         private float currentSlowMultiplier = 1f;
         private Coroutine slowCoroutine;
         private bool bonusActive;
+        private float initialDistance = -1f; // Initial distance from player to finish.
 
-        [SerializeField]
-        private Light2D playerLight; // Reference to the Light2D component
-        [SerializeField]
-        private Transform finishPoint; // Reference to the finish marker (assigned from labyrinth)
-
-        // Base light range is fixed at 1 and should not change.
-        [SerializeField, Range(0.1f, 5f)]
-        private float baseLightRange = 1f;
-        // Maximum light range when the player is at the finish.
-        [SerializeField, Range(1f, 2f)]
-        private float maxLightRange = 2f;
-
-        // Stores the initial distance from the player to the finish at the start.
-        private float initialDistance = -1f;
-
-        // Публичная переменная для бессмертия игрока.
-        [Header("Player Settings")]
-        [Tooltip("Если включено, игрок не получает урон.")]
-        public bool isImmortal = false;
-
-        /// <summary>
-        /// Initializes the player.
-        /// </summary>
         private void Start()
         {
             playerStats = GetComponent<PlayerStatsHandler>();
+            spriteRenderer = GetComponent<SpriteRenderer>();
 
-            // If finishPoint is not assigned, wait for the finish marker.
+            // If finishPoint is not assigned, wait for the finish marker to appear.
             if (finishPoint == null)
             {
                 StartCoroutine(WaitForFinishMarker());
@@ -73,7 +75,7 @@ namespace Resources.Scripts.Player
         {
             while (finishPoint == null)
             {
-                GameObject finishObj = GameObject.FindWithTag("Finish");
+                GameObject finishObj = GameObject.FindGameObjectWithTag(ETag.Fairy.ToString()); // If finish marker uses a specific tag, update accordingly.
                 if (finishObj != null)
                 {
                     finishPoint = finishObj.transform;
@@ -93,31 +95,44 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Updates player movement based on input.
         /// Movement is disabled if the map is active.
+        /// Also updates animation and sprite flipping based on direction.
         /// </summary>
         private void UpdateMovement()
         {
-            // Do not move if the map is active.
-            if (LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
-                return;
-
-            if (Input.GetKey(KeyCode.Space))
+            // Do not move if the minimap is active or if Space is held down.
+            if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive) || Input.GetKey(KeyCode.Space))
                 return;
 
             float horizontal = (joystick != null) ? joystick.Horizontal : Input.GetAxis("Horizontal");
             float vertical   = (joystick != null) ? joystick.Vertical   : Input.GetAxis("Vertical");
             float currentSpeed = ((joystick != null) ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
             Vector2 movement = new Vector2(horizontal, vertical) * currentSpeed;
-            transform.Translate(movement * Time.deltaTime);
+
+            // Move the player in world space.
+            transform.Translate(movement * Time.deltaTime, Space.World);
+
+            // Update animation state and sprite flipping.
+            if (Mathf.Approximately(horizontal, 0f) && Mathf.Approximately(vertical, 0f))
+            {
+                animator.Play("Idle");
+            }
+            else
+            {
+                animator.Play("Run");
+                // Flip sprite based on horizontal movement.
+                spriteRenderer.flipX = horizontal > 0f;
+            }
         }
 
         /// <summary>
-        /// Adjusts the player's light range based on the distance to the finish marker.
+        /// Adjusts the player's light outer radius based on distance to the finish marker.
         /// </summary>
         private void UpdateLightOuterRange()
         {
             if (finishPoint != null && playerLight != null && initialDistance > 0)
             {
                 float currentDistance = Vector2.Distance(transform.position, finishPoint.position);
+                // Calculate a t value from 0 to 1 based on distance.
                 float t = 1f - Mathf.Clamp01(currentDistance / initialDistance);
                 float outerRange = Mathf.Lerp(baseLightRange, maxLightRange, t);
                 playerLight.pointLightOuterRadius = outerRange;
@@ -125,7 +140,7 @@ namespace Resources.Scripts.Player
         }
 
         /// <summary>
-        /// Called when the player's health reaches zero.
+        /// Handles player death by disabling all UI canvases and destroying the player object.
         /// </summary>
         private void Die()
         {
@@ -136,29 +151,23 @@ namespace Resources.Scripts.Player
             Destroy(gameObject);
         }
 
-        /// <summary>
-        /// Handles trigger collisions (e.g., with Fairies).
-        /// When a fairy is picked up, it restores mana.
-        /// </summary>
-        /// <param name="other">Collider of the other object</param>
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (other.CompareTag("Fairy"))
+            // When colliding with a fairy, destroy it and restore mana.
+            if (other.CompareTag(ETag.Fairy.ToString()))
             {
                 FairyController fairy = other.GetComponent<FairyController>();
-                fairy.Destroy();
-                // Restore 20 mana units when picking up a fairy.
+                fairy.DestroyFairy();
                 playerStats.RestoreMana(20f);
             }
         }
 
         /// <summary>
-        /// Reduces the player's health when hit by an enemy and applies a dash effect if enabled.
+        /// Reduces the player's health based on enemy damage and applies a dash effect if enabled.
         /// </summary>
-        /// <param name="enemy">Enemy controller</param>
+        /// <param name="enemy">Enemy controller that hit the player.</param>
         public void TakeDamage(EnemyController enemy)
         {
-            // Если игрок бессмертен, урон не наносится.
             if (isImmortal)
                 return;
 
@@ -169,17 +178,17 @@ namespace Resources.Scripts.Player
                 Die();
                 return;
             }
-            // Отталкивание игрока выполняется только если у врага включен pushPlayer
             if (enemy.pushPlayer)
             {
+                // Dash away from the enemy.
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
             }
         }
 
         /// <summary>
-        /// Temporarily increases the player's speed.
+        /// Temporarily increases the player's movement speed by a multiplier for a set duration.
         /// </summary>
-        /// <param name="multiplier">Speed multiplier</param>
+        /// <param name="multiplier">Speed multiplier to apply.</param>
         public void IncreaseSpeed(float multiplier)
         {
             if (bonusActive)
@@ -198,9 +207,9 @@ namespace Resources.Scripts.Player
         }
 
         /// <summary>
-        /// Stuns the player for a given duration.
+        /// Stuns the player for the specified duration.
         /// </summary>
-        /// <param name="duration">Duration of stun</param>
+        /// <param name="duration">Duration of the stun effect.</param>
         public void Stun(float duration)
         {
             StartCoroutine(StunCoroutine(duration));
@@ -216,8 +225,8 @@ namespace Resources.Scripts.Player
         /// <summary>
         /// Applies a slow effect to the player's movement for a specified duration.
         /// </summary>
-        /// <param name="slowFactor">Slowdown factor</param>
-        /// <param name="duration">Duration of the effect</param>
+        /// <param name="slowFactor">Factor by which movement speed is reduced.</param>
+        /// <param name="duration">Duration of the slow effect.</param>
         public void ApplySlow(float slowFactor, float duration)
         {
             if (slowCoroutine != null)

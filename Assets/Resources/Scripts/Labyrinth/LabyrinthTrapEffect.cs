@@ -2,11 +2,15 @@ using UnityEngine;
 using Resources.Scripts.Player;
 
 namespace Resources.Scripts.Labyrinth
-
 {
+    /// <summary>
+    /// Applies a trap effect that stuns the player when triggered.
+    /// </summary>
     public class LabyrinthTrapEffect : MonoBehaviour
     {
-        public float stunDuration = 2f; // Stun duration in seconds
+        [Header("Trap Settings")]
+        [SerializeField, Tooltip("Duration of the stun effect in seconds.")]
+        public float stunDuration = 2f;
 
         private void OnTriggerEnter2D(Collider2D other)
         {
@@ -17,7 +21,6 @@ namespace Resources.Scripts.Labyrinth
                 {
                     player.Stun(stunDuration);
                 }
-
                 Destroy(gameObject);
             }
         }

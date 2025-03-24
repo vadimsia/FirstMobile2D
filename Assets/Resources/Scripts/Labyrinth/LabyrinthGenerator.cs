@@ -3,47 +3,58 @@ using System.Collections.Generic;
 
 namespace Resources.Scripts.Labyrinth
 {
+    /// <summary>
+    /// Generates the labyrinth field, instantiates cell prefabs and places bonus/trap objects.
+    /// </summary>
     public class LabyrinthGenerator : MonoBehaviour
     {
-        [SerializeField, Range(4, 20)]
+        [Header("Grid Settings")]
+        [SerializeField, Range(4, 20), Tooltip("Number of rows in the labyrinth.")]
         private int rows = 5;
-        [SerializeField, Range(4, 20)]
+        [SerializeField, Range(4, 20), Tooltip("Number of columns in the labyrinth.")]
         private int cols = 5;
-        [SerializeField]
+        [SerializeField, Tooltip("Prefab for the labyrinth cell.")]
         private LabyrinthCellPrefab cellPrefab;
 
-        // Bonus and Trap Settings
+        [Header("Cell Settings")]
+        [SerializeField, Tooltip("Distance between cells in the labyrinth.")]
+        private float cellSize = 1f;
+
         [Header("Bonus and Trap Settings")]
-        [SerializeField]
+        [SerializeField, Tooltip("Prefab for bonus objects.")]
         private GameObject bonusPrefab;
-        [SerializeField]
+        [SerializeField, Tooltip("Number of bonus objects to spawn.")]
         private int bonusCount = 1;
-        [SerializeField]
+        [SerializeField, Tooltip("Prefab for trap objects.")]
         private GameObject trapPrefab;
-        [SerializeField]
+        [SerializeField, Tooltip("Number of trap objects to spawn.")]
         private int trapCount = 3;
+        [SerializeField, Range(1, 10), Tooltip("Minimum Manhattan distance between bonus/trap placements.")]
+        private int minPlacementDistance = 5;
 
         private LabyrinthField labyrinth;
 
         /// <summary>
-        /// Generates the labyrinth field and instantiates cell objects.
+        /// Generates the labyrinth field, instantiates cell objects and places bonus/trap objects.
         /// </summary>
         private void GenerateField()
         {
             List<GameObject> solutionCells = new List<GameObject>();
             List<GameObject> nonSolutionCells = new List<GameObject>();
 
-            // Instantiate labyrinth cells
+            // Create cell objects in the grid.
             for (int row = 0; row < rows; row++)
             {
                 for (int col = 0; col < cols; col++)
                 {
-                    var cell = labyrinth.Field[row, col];
-                    GameObject cellObj = Instantiate(cellPrefab, new Vector2(col, -row), Quaternion.identity, transform).gameObject;
+                    LabyrinthCell cell = labyrinth.Field[row, col];
+                    // Calculate cell position based on cellSize.
+                    Vector2 cellPosition = new Vector2(col * cellSize, -row * cellSize);
+                    GameObject cellObj = Instantiate(cellPrefab, cellPosition, Quaternion.identity, transform).gameObject;
                     cellObj.name = "R" + row + "C" + col;
                     cellObj.GetComponent<LabyrinthCellPrefab>().Init(cell);
 
-                    // Exclude start and finish cells from bonus/trap placement
+                    // Collect cells that are not start or finish for bonus/trap placement.
                     if (!cell.IsStart && !cell.IsFinish)
                     {
                         if (cell.IsSolutionPath)
@@ -54,7 +65,7 @@ namespace Resources.Scripts.Labyrinth
                 }
             }
 
-            // Place bonus items on solution path with distance check
+            // Place bonus objects on solution path cells.
             if (solutionCells.Count > 0 && bonusPrefab != null && bonusCount > 0)
             {
                 List<GameObject> availableBonusCells = new List<GameObject>(solutionCells);
@@ -66,20 +77,20 @@ namespace Resources.Scripts.Labyrinth
                     Instantiate(bonusPrefab, bonusCell.transform.position, Quaternion.identity, bonusCell.transform);
                     placedBonus++;
 
-                    // Get grid coordinates (row = -y, col = x)
-                    int gridRowBonus = Mathf.RoundToInt(-bonusCell.transform.position.y);
-                    int gridColBonus = Mathf.RoundToInt(bonusCell.transform.position.x);
+                    // Calculate grid coordinates.
+                    int gridRowBonus = Mathf.RoundToInt(-bonusCell.transform.position.y / cellSize);
+                    int gridColBonus = Mathf.RoundToInt(bonusCell.transform.position.x / cellSize);
 
                     availableBonusCells.RemoveAll(cell =>
                     {
-                        int cellRow = Mathf.RoundToInt(-cell.transform.position.y);
-                        int cellCol = Mathf.RoundToInt(cell.transform.position.x);
-                        return Mathf.Abs(cellRow - gridRowBonus) + Mathf.Abs(cellCol - gridColBonus) < 5;
+                        int cellRow = Mathf.RoundToInt(-cell.transform.position.y / cellSize);
+                        int cellCol = Mathf.RoundToInt(cell.transform.position.x / cellSize);
+                        return Mathf.Abs(cellRow - gridRowBonus) + Mathf.Abs(cellCol - gridColBonus) < minPlacementDistance;
                     });
                 }
             }
 
-            // Place traps on non-solution cells with distance check
+            // Place trap objects on non-solution path cells.
             if (nonSolutionCells.Count > 0 && trapPrefab != null && trapCount > 0)
             {
                 List<GameObject> availableTrapCells = new List<GameObject>(nonSolutionCells);
@@ -91,37 +102,37 @@ namespace Resources.Scripts.Labyrinth
                     Instantiate(trapPrefab, trapCell.transform.position, Quaternion.identity, trapCell.transform);
                     placedTrap++;
 
-                    int gridRowTrap = Mathf.RoundToInt(-trapCell.transform.position.y);
-                    int gridColTrap = Mathf.RoundToInt(trapCell.transform.position.x);
+                    int gridRowTrap = Mathf.RoundToInt(-trapCell.transform.position.y / cellSize);
+                    int gridColTrap = Mathf.RoundToInt(trapCell.transform.position.x / cellSize);
 
                     availableTrapCells.RemoveAll(cell =>
                     {
-                        int cellRow = Mathf.RoundToInt(-cell.transform.position.y);
-                        int cellCol = Mathf.RoundToInt(cell.transform.position.x);
-                        return Mathf.Abs(cellRow - gridRowTrap) + Mathf.Abs(cellCol - gridColTrap) < 5;
+                        int cellRow = Mathf.RoundToInt(-cell.transform.position.y / cellSize);
+                        int cellCol = Mathf.RoundToInt(cell.transform.position.x / cellSize);
+                        return Mathf.Abs(cellRow - gridRowTrap) + Mathf.Abs(cellCol - gridColTrap) < minPlacementDistance;
                     });
                 }
             }
         }
 
         /// <summary>
-        /// Initializes the labyrinth field and sets the player position to the start cell.
+        /// Initializes the labyrinth field, sets the player spawn point and sets up the mini-map solution path.
         /// </summary>
         private void Start()
         {
             labyrinth = new LabyrinthField(rows, cols);
 
-            // Find the player by tag "Player" and set its position to the start cell.
+            // Find the player by tag and set its position to the labyrinth start cell.
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
-                Vector2 spawnPos = new Vector2(labyrinth.StartCellCoordinates.y, -labyrinth.StartCellCoordinates.x);
+                Vector2 spawnPos = new Vector2(labyrinth.StartCellCoordinates.y * cellSize, -labyrinth.StartCellCoordinates.x * cellSize);
                 player.transform.position = spawnPos;
             }
 
             GenerateField();
 
-            // Set the solution path on the minimap.
+            // If LabyrinthMapController exists, configure the mini-map solution path.
             if (LabyrinthMapController.Instance != null)
             {
                 List<Vector3> solutionPath = labyrinth.GetSolutionPathWorldPositions();

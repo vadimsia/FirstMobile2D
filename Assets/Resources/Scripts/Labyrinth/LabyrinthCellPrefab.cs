@@ -4,24 +4,36 @@ using UnityEngine.UI;
 namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
-    /// Инициализирует внешний вид ячейки лабиринта, устанавливает бордюры и теги.
+    /// Initializes the visual representation of a labyrinth cell,
+    /// setting borders, text and tags based on cell data.
     /// </summary>
     public class LabyrinthCellPrefab : MonoBehaviour
     {
-        [SerializeField] private GameObject topBorder;
-        [SerializeField] private GameObject rightBorder;
-        [SerializeField] private GameObject bottomBorder;
-        [SerializeField] private GameObject leftBorder;
-        [SerializeField] private Text arrayValueText; // Компонент для отображения текста
+        [Header("Border GameObjects")]
+        [SerializeField, Tooltip("GameObject for the top border.")]
+        private GameObject topBorder;
+        [SerializeField, Tooltip("GameObject for the right border.")]
+        private GameObject rightBorder;
+        [SerializeField, Tooltip("GameObject for the bottom border.")]
+        private GameObject bottomBorder;
+        [SerializeField, Tooltip("GameObject for the left border.")]
+        private GameObject leftBorder;
 
-        [SerializeField] private bool showArrayValueText = true;             // Отображение текста
-        [SerializeField, Range(0f, 1f)] private float defaultTextAlpha = 0.5f; // Прозрачность текста
+        [Header("Text Settings")]
+        [SerializeField, Tooltip("UI Text component for displaying the cell's array value.")]
+        private Text arrayValueText;
+        [SerializeField, Tooltip("Toggle text visibility.")]
+        private bool showArrayValueText = true;
+        [SerializeField, Range(0f, 1f), Tooltip("Default text alpha (transparency).")]
+        private float defaultTextAlpha = 0.5f;
 
-        private bool isFinishCell;
+        [Header("Cell Type Settings")]
+        [SerializeField, Tooltip("If true, this cell represents the finish point.")]
+        private bool isFinishCell = false;
 
         private void Awake()
         {
-            // Проверяем наличие BoxCollider2D и устанавливаем его как триггер
+            // Ensure a BoxCollider2D is attached and set as trigger.
             BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
             if (boxCollider == null)
             {
@@ -31,33 +43,30 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Обрабатывает бордюр: если он не нужен, отключает объект;
-        /// если нужен – включает объект.
+        /// Processes a border GameObject: enables/disables it based on hasBorder.
         /// </summary>
-        /// <param name="borderObject">Объект бордюра</param>
-        /// <param name="hasBorder">Нужно ли отображать бордюр</param>
-        private void ProcessBorder(ref GameObject borderObject, bool hasBorder)
+        /// <param name="borderObject">Border GameObject reference.</param>
+        /// <param name="hasBorder">Should the border be visible?</param>
+        private void ProcessBorder(GameObject borderObject, bool hasBorder)
         {
             if (borderObject != null)
             {
-                // Просто включаем или отключаем объект, убирая тени полностью
                 borderObject.SetActive(hasBorder);
             }
         }
 
         /// <summary>
-        /// Инициализирует внешний вид ячейки на основе данных.
+        /// Initializes the cell prefab based on provided cell data.
         /// </summary>
-        /// <param name="cell">Данные ячейки лабиринта</param>
+        /// <param name="cell">Labyrinth cell data.</param>
         public void Init(LabyrinthCell cell)
         {
-            // Обрабатываем бордюры
-            ProcessBorder(ref topBorder, cell.TopBorder);
-            ProcessBorder(ref rightBorder, cell.RightBorder);
-            ProcessBorder(ref bottomBorder, cell.BottomBorder);
-            ProcessBorder(ref leftBorder, cell.LeftBorder);
+            ProcessBorder(topBorder, cell.TopBorder);
+            ProcessBorder(rightBorder, cell.RightBorder);
+            ProcessBorder(bottomBorder, cell.BottomBorder);
+            ProcessBorder(leftBorder, cell.LeftBorder);
 
-            // Устанавливаем текст и цвет в зависимости от типа ячейки
+            // Set cell text and color based on cell type.
             if (cell.IsStart)
             {
                 arrayValueText.text = "S";
@@ -89,7 +98,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Обновляет видимость текста на основе настроек в инспекторе.
+        /// Updates the text visibility by adjusting its alpha.
         /// </summary>
         private void UpdateTextVisibility()
         {
@@ -103,7 +112,7 @@ namespace Resources.Scripts.Labyrinth
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            // При столкновении с игроком загружаем следующую сцену, если это финишная ячейка
+            // If the finish cell collides with the player, load the designated scene.
             if (isFinishCell && other.CompareTag("Player"))
             {
                 UnityEngine.SceneManagement.SceneManager.LoadScene("FirstPartScene");

@@ -3,22 +3,22 @@ using UnityEngine;
 namespace Resources.Scripts.Player
 {
     /// <summary>
-    /// Handles player's stats: health, mana, and fairy count.
+    /// Handles the player's stats, including health, mana, and fairy collection.
     /// </summary>
     public class PlayerStatsHandler : MonoBehaviour
     {
-        // Count of fairies collected by the player.
-        [field: SerializeField] public int FairyCount { get; set; }
+        [Header("Fairy Collection")]
+        [SerializeField, Tooltip("Number of fairies collected by the player.")]
+        public int FairyCount { get; set; }
 
-        // Health fields.
-        [SerializeField, Range(5, 50)]
+        [Header("Health Settings")]
+        [SerializeField, Range(5, 50), Tooltip("Initial health of the player.")]
         private int health = 20;
-        [SerializeField]
+        [SerializeField, Tooltip("Maximum health of the player.")]
         private int maxHealth = 50;
 
         /// <summary>
-        /// Gets or sets the player's health.
-        /// The value is clamped between 0 and maxHealth.
+        /// Gets or sets the player's health, clamped between 0 and maxHealth.
         /// </summary>
         public int Health
         {
@@ -26,17 +26,17 @@ namespace Resources.Scripts.Player
             set { health = Mathf.Clamp(value, 0, maxHealth); }
         }
 
-        // Mana properties.
-        [SerializeField]
+        [Header("Mana Settings")]
+        [SerializeField, Tooltip("Maximum mana available to the player.")]
         private float maxMana = 100f;
-        [SerializeField]
-        private float currentMana; // No need to initialize (default is 0)
-        [SerializeField]
-        private float manaRegenRate = 10f; // Mana regenerated per second.
+        [SerializeField, Tooltip("Current mana available to the player.")]
+        private float currentMana;
+        [SerializeField, Tooltip("Rate at which mana regenerates per second.")]
+        private float manaRegenRate = 10f;
 
         // Timer for delaying mana regeneration after spell usage.
-        private float manaRegenDelayTimer; // Default value is 0
-        // Delay time (in seconds) after using mana before regeneration resumes.
+        private float manaRegenDelayTimer;
+        // Constant delay time (in seconds) after mana usage.
         private const float ManaRegenDelayAfterSpell = 2f;
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Resources.Scripts.Player
 
         private void Update()
         {
-            // If the regeneration delay is active, count down the timer.
+            // Count down mana regeneration delay if active.
             if (manaRegenDelayTimer > 0)
             {
                 manaRegenDelayTimer -= Time.deltaTime;
@@ -63,7 +63,7 @@ namespace Resources.Scripts.Player
         }
 
         /// <summary>
-        /// Regenerates mana over time.
+        /// Regenerates mana over time, ensuring it does not exceed maxMana.
         /// </summary>
         private void RegenerateMana()
         {
@@ -72,16 +72,15 @@ namespace Resources.Scripts.Player
 
         /// <summary>
         /// Attempts to use a specified amount of mana.
-        /// If successful, subtracts the mana and triggers the regeneration delay.
+        /// Returns true if successful and triggers a regeneration delay.
         /// </summary>
         /// <param name="amount">Amount of mana to use.</param>
-        /// <returns>True if mana was successfully used; otherwise, false.</returns>
+        /// <returns>True if mana is successfully used; otherwise, false.</returns>
         public bool UseMana(float amount)
         {
             if (currentMana >= amount)
             {
                 currentMana -= amount;
-                // Trigger the regeneration delay after using mana.
                 manaRegenDelayTimer = ManaRegenDelayAfterSpell;
                 return true;
             }

@@ -3,28 +3,27 @@ using UnityEngine;
 namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
-    /// Represents a single cell in the labyrinth grid.
-    /// Stores information about cell borders, unique identifier, and special cell flags.
+    /// Represents a single cell in the labyrinth grid,
+    /// including border flags, array value and special cell markers.
     /// </summary>
     public class LabyrinthCell
     {
-        // Border flags for this cell.
+        // Border flags.
         public bool TopBorder;
         public bool RightBorder;
         public bool BottomBorder;
         public bool LeftBorder;
 
-        // Used to identify connected cells (for merging during maze generation).
+        // Used to identify connected cells during maze generation.
         public int ArrayValue;
 
-        // Flags to mark special cells.
+        // Special cell markers.
         public bool IsStart;
         public bool IsFinish;
         public bool IsSolutionPath;
 
         /// <summary>
         /// Default constructor.
-        /// Initializes all borders to false, ArrayValue to 0 and flags to false.
         /// </summary>
         public LabyrinthCell()
         {
@@ -41,7 +40,7 @@ namespace Resources.Scripts.Labyrinth
         /// <summary>
         /// Copies selected properties from another cell.
         /// </summary>
-        /// <param name="reference">Reference cell to copy from.</param>
+        /// <param name="reference">Cell to copy data from.</param>
         public void Copy(LabyrinthCell reference)
         {
             RightBorder = reference.RightBorder;

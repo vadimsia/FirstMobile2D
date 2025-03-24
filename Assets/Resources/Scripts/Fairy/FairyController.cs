@@ -3,14 +3,27 @@ using UnityEngine;
 namespace Resources.Scripts.Fairy
 {
     /// <summary>
-    /// Controls fairy behavior including movement and disappearance upon being collected.
+    /// Controls fairy behavior including movement and disappearance when collected.
     /// </summary>
     public class FairyController : MonoBehaviour
     {
-        [SerializeField, Range(1, 5)]
+        [Header("Movement Settings")]
+        [SerializeField, Range(1, 10), Tooltip("Maximum radius multiplier for fairy movement from its start position.")]
         private int maxMoveRadius = 2;
-        [SerializeField, Range(3, 15)]
+        [SerializeField, Range(1, 20), Tooltip("Speed at which the fairy moves.")]
         private int speed = 5;
+        [SerializeField, Tooltip("Smoothing factor for movement interpolation.")]
+        private float moveSmoothing = 0.1f;
+
+        [Header("Randomization Settings")]
+        [SerializeField, Tooltip("Minimum multiplier for the random offset distance.")]
+        private float minOffsetMultiplier = 1f;
+        [SerializeField, Tooltip("Maximum multiplier for the random offset distance.")]
+        private float maxOffsetMultiplier = 3f;
+
+        [Header("Debug Settings")]
+        [SerializeField, Tooltip("Enable debug logging for fairy movement.")]
+        private bool debugLog = false;
 
         private Vector3 startPosition;
         private Vector3 targetPosition;
@@ -30,24 +43,33 @@ namespace Resources.Scripts.Fairy
         /// </summary>
         private void UpdateTargetPosition()
         {
-            targetPosition = startPosition - new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0);
-            targetPosition *= Random.Range(3, maxMoveRadius);
+            // Calculate a random offset within a unit circle and scale it with random multipliers and maxMoveRadius.
+            Vector3 randomOffset = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f);
+            float multiplier = Random.Range(minOffsetMultiplier, maxOffsetMultiplier);
+            targetPosition = startPosition + randomOffset * multiplier * maxMoveRadius;
+
+            if (debugLog)
+            {
+                Debug.Log("New target position: " + targetPosition);
+            }
         }
 
         private void Update()
         {
-            if ((transform.position - targetPosition).magnitude < 0.1f)
+            // If the fairy is close enough to the target, update the target position.
+            if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
             {
                 UpdateTargetPosition();
             }
 
+            // Smoothly move the fairy towards the target position.
             transform.position = Vector3.Lerp(transform.position, targetPosition, speed * Time.deltaTime);
         }
 
         /// <summary>
         /// Destroys the fairy from the scene when collected.
         /// </summary>
-        public void Destroy()
+        public void DestroyFairy()
         {
             Destroy(gameObject);
         }

@@ -26,10 +26,13 @@ namespace Resources.Scripts.SpellMode.Skills
         /// </summary>
         protected override void ActivateSkill()
         {
-            // Create a default filter. Adjust filter options (e.g., layerMask, triggers) as needed.
-            ContactFilter2D filter = new ContactFilter2D();
-            filter.useTriggers = false;
-            // Use the non-allocating overload with a ContactFilter2D.
+            // Set up a default contact filter (triggers are not included).
+            ContactFilter2D filter = new ContactFilter2D
+            {
+                useTriggers = false
+            };
+
+            // Use the non-allocating overload to get colliders within the effect radius.
             int count = Physics2D.OverlapCircle(transform.position, effectRadius, filter, resultsBuffer);
             for (int i = 0; i < count; i++)
             {
@@ -47,7 +50,7 @@ namespace Resources.Scripts.SpellMode.Skills
         }
 
         /// <summary>
-        /// Draws the effect radius in the editor.
+        /// Draws the effect radius in the editor for visualization.
         /// </summary>
         private void OnDrawGizmosSelected()
         {

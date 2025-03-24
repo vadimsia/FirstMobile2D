@@ -3,28 +3,33 @@ using UnityEngine.SceneManagement;
 
 namespace Resources.Scripts.UI
 {
+    /// <summary>
+    /// Manages the pause menu, allowing the game to be paused/resumed,
+    /// opening settings, and exiting to the main menu.
+    /// </summary>
     public class PauseMenu : MonoBehaviour
     {
-        // Reference to the pause panel (assigned in the Inspector)
+        [Header("UI Panels")]
+        [Tooltip("UI panel displayed when the game is paused.")]
         public GameObject pausePanel;
-
-        // Reference to the settings panel (currently for demonstration)
+        [Tooltip("UI panel for settings (currently for demonstration).")]
         public GameObject settingsPanel;
 
-        // Flag indicating whether the game is paused
         private bool isPaused;
 
         private void Start()
         {
-            // Hide panels when the game starts
+            // Hide both pause and settings panels at game start.
             if (pausePanel != null)
                 pausePanel.SetActive(false);
-
             if (settingsPanel != null)
                 settingsPanel.SetActive(false);
         }
 
-        // Called when the "Pause" button is pressed
+        /// <summary>
+        /// Called when the Pause button is pressed.
+        /// Toggles between pausing and resuming the game.
+        /// </summary>
         public void OnPauseButtonPressed()
         {
             if (!isPaused)
@@ -33,51 +38,58 @@ namespace Resources.Scripts.UI
                 ResumeGame();
         }
 
-        // Pauses the game
+        /// <summary>
+        /// Pauses the game by showing the pause panel and stopping time.
+        /// </summary>
         public void PauseGame()
         {
             if (pausePanel != null)
                 pausePanel.SetActive(true);
 
-            // Stop game time
             Time.timeScale = 0f;
             isPaused = true;
         }
 
-        // Resumes the game (called when "Resume" button is pressed)
+        /// <summary>
+        /// Resumes the game by hiding the pause panel and restarting time.
+        /// </summary>
         public void ResumeGame()
         {
             if (pausePanel != null)
                 pausePanel.SetActive(false);
 
-            // Resume game time
             Time.timeScale = 1f;
             isPaused = false;
         }
 
-        // Opens the settings panel (pause panel remains active)
+        /// <summary>
+        /// Opens the settings panel while keeping the pause panel active.
+        /// </summary>
         public void OpenSettings()
         {
             if (settingsPanel != null)
                 settingsPanel.SetActive(true);
             else
-                Debug.Log("Settings panel is not assigned!");
+                Debug.LogWarning("Settings panel is not assigned!");
         }
 
-        // Closes the settings panel and returns to the pause panel
+        /// <summary>
+        /// Closes the settings panel and returns to the pause panel.
+        /// </summary>
         public void CloseSettings()
         {
             if (settingsPanel != null)
                 settingsPanel.SetActive(false);
             else
-                Debug.Log("Settings panel is not assigned!");
+                Debug.LogWarning("Settings panel is not assigned!");
         }
 
-        // Exits to the main menu (scene named "Menu")
-        // Note: Ensure the "Menu" scene is enabled in the build settings.
+        /// <summary>
+        /// Exits to the main menu scene.
+        /// </summary>
         public void ExitToMainMenu()
         {
-            // Reset timeScale before transitioning to ensure the menu functions correctly
+            // Reset time scale before transitioning.
             Time.timeScale = 1f;
             SceneManager.LoadScene("Menu");
         }

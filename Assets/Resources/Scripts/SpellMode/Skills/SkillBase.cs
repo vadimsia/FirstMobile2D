@@ -14,12 +14,12 @@ namespace Resources.Scripts.SpellMode.Skills
         [Tooltip("Cooldown duration in seconds.")]
         public float cooldownDuration = 5f;
 
-        // Protected instance fields renamed to PascalCase and redundant initialization removed.
+        // Protected fields for managing cooldown state.
         protected bool IsOnCooldown;
         protected float CooldownTimer;
 
         /// <summary>
-        /// Attempts to activate the skill if the cooldown is finished.
+        /// Attempts to activate the skill if the cooldown has finished.
         /// </summary>
         public void TryActivateSkill()
         {
@@ -34,7 +34,7 @@ namespace Resources.Scripts.SpellMode.Skills
         }
 
         /// <summary>
-        /// Abstract method that must be implemented to execute the skill's effect.
+        /// Abstract method to execute the skill's effect.
         /// </summary>
         protected abstract void ActivateSkill();
 
