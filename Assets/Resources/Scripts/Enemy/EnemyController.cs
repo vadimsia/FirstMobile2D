@@ -7,80 +7,109 @@ namespace Resources.Scripts.Enemy
     public class EnemyController : MonoBehaviour
     {
         [Header("Movement Settings")]
-        [SerializeField, Range(1, 15), Tooltip("Base movement speed of the enemy.")]
-        private int speed = 1;
-        [SerializeField, Tooltip("Multiplier for enemy movement speed when slowed.")]
-        private float slowMultiplier = 1f;
+        [Tooltip("Базовая скорость перемещения врага.")]
+        public int speed = 1;
+        [Tooltip("Множитель для замедления врага.")]
+        public float slowMultiplier = 1f;
 
         [Header("Attack Settings")]
-        [SerializeField, Tooltip("Maximum distance at which the enemy will detect the player.")]
-        private float detectionRange = 5f;
-        [SerializeField, Tooltip("Distance at which the enemy starts attacking the player.")]
-        private float attackRange = 1f;
-        [SerializeField, Tooltip("Time interval between consecutive attacks (in seconds).")]
-        private float attackCooldown = 1f;
+        [Tooltip("Максимальное расстояние для обнаружения игрока.")]
+        public float detectionRange = 5f;
+        [Tooltip("Расстояние, на котором враг начинает атаку.")]
+        public float attackRange = 1f;
+        [Tooltip("Интервал между атаками (сек).")]
+        public float attackCooldown = 1f;
         private float lastAttackTime;
 
         [Header("Player Interaction Settings")]
-        [Tooltip("Enables or disables pushing the player on contact.")]
+        [Tooltip("Включить отталкивание игрока при контакте.")]
         public bool pushPlayer = true;
-        [SerializeField, Tooltip("Force applied to the player when pushed.")]
-        private float pushForceMultiplier = 1f;
+        [Tooltip("Сила отталкивания игрока.")]
+        public float pushForceMultiplier = 1f;
+
+        [Header("Animation Settings")]
+        [Tooltip("Компонент Animator, отвечающий за анимацию врага.")]
+        public Animator animator;
+        [Tooltip("Название анимации для состояния Idle.")]
+        public string idleAnimationName = "Idle";
+        [Tooltip("Название анимации для состояния Walk.")]
+        public string walkAnimationName = "Walk";
+        [Tooltip("Компонент SpriteRenderer для управления направлением спрайта.")]
+        public SpriteRenderer spriteRenderer;
+
+        [Header("Enemy Customization Settings")]
+        [Tooltip("Имя врага (для отладки и настройки).")]
+        public string enemyName = "Enemy";
 
         [Header("Debug Settings")]
-        [SerializeField, Tooltip("Enable debug logging for enemy actions.")]
-        private bool debugLog = false;
+        [Tooltip("Включить вывод отладочной информации в консоль.")]
+        public bool debugLog;
 
         private float currentSpeed;
         private Coroutine slowCoroutine;
         private Rigidbody2D rb;
         private PlayerController player;
+        private bool isChasing;
 
         private void Start()
         {
-            // Find and cache the player reference using tag "Player"
+            // Поиск игрока по тегу "Player"
             player = GameObject.FindWithTag("Player")?.GetComponent<PlayerController>();
             currentSpeed = speed;
-            rb = GetComponent<Rigidbody2D>(); // For physics interactions such as push
+            rb = GetComponent<Rigidbody2D>();
+
+            // Если ссылки на компоненты не установлены через инспектор, попробуем получить их автоматически
+            if (animator == null)
+                animator = GetComponent<Animator>();
+            if (spriteRenderer == null)
+                spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
         private void Update()
         {
             FollowPlayer();
+            AnimateMovement();
         }
 
         /// <summary>
-        /// Moves the enemy toward the player if within detection range and attacks if in range.
+        /// Перемещает врага к игроку, если игрок находится в пределах detectionRange.
+        /// При приближении на расстояние attackRange враг атакует игрока.
         /// </summary>
         private void FollowPlayer()
         {
             if (player == null)
             {
-                // Destroy the enemy if the player is missing (e.g., destroyed)
+                // Если игрок отсутствует, уничтожаем врага
                 Destroy(gameObject);
                 return;
             }
 
             float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
 
-            // Only pursue if within detection range
+            // Если игрок за пределами обнаружения, не преследуем
             if (distanceToPlayer > detectionRange)
+            {
+                isChasing = false;
                 return;
+            }
 
-            // Smoothly move towards the player's position
+            // Преследуем игрока
+            isChasing = true;
+            // Используем Lerp для плавного перемещения
             transform.position = Vector3.Lerp(transform.position, player.transform.position, Time.deltaTime * currentSpeed);
 
-            // Attack if close enough and cooldown has passed
+            // Атака, если игрок в пределах атаки и прошло время перезарядки
             if (distanceToPlayer <= attackRange && Time.time - lastAttackTime >= attackCooldown)
             {
                 lastAttackTime = Time.time;
                 player.TakeDamage(this);
+
                 if (debugLog)
                 {
-                    Debug.Log("Enemy attacked the player.");
+                    Debug.Log(enemyName + " атаковал игрока.");
                 }
 
-                // Optionally, push the player if enabled
+                // Отталкивание игрока
                 if (pushPlayer && player.TryGetComponent<Rigidbody2D>(out Rigidbody2D playerRb))
                 {
                     Vector2 pushDirection = (player.transform.position - transform.position).normalized;
@@ -90,20 +119,51 @@ namespace Resources.Scripts.Enemy
         }
 
         /// <summary>
-        /// Applies a slow effect to the enemy for a specified duration.
+        /// Обновляет анимацию врага и его ориентацию в зависимости от направления движения.
         /// </summary>
-        /// <param name="slowFactor">Factor by which the enemy's speed is reduced.</param>
-        /// <param name="duration">Duration of the slow effect in seconds.</param>
+        private void AnimateMovement()
+        {
+            if (animator != null)
+            {
+                if (isChasing)
+                {
+                    animator.Play(walkAnimationName);
+                }
+                else
+                {
+                    animator.Play(idleAnimationName);
+                }
+            }
+
+            // Если игрок преследуется, определяем направление движения относительно игрока.
+            if (spriteRenderer != null && player != null)
+            {
+                float direction = player.transform.position.x - transform.position.x;
+                if (direction > 0) // Игрок справа — двигаемся вправо
+                {
+                    spriteRenderer.flipX = true;
+                }
+                else if (direction < 0) // Игрок слева — двигаемся влево
+                {
+                    spriteRenderer.flipX = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Применяет эффект замедления к врагу на заданный период времени.
+        /// </summary>
+        /// <param name="slowFactor">Коэффициент замедления (например, 0.5 — половина скорости).</param>
+        /// <param name="duration">Длительность замедления в секундах.</param>
         public void ApplySlow(float slowFactor, float duration)
         {
             if (slowCoroutine != null)
                 StopCoroutine(slowCoroutine);
-
             slowCoroutine = StartCoroutine(SlowEffect(slowFactor, duration));
         }
 
         /// <summary>
-        /// Coroutine that handles the slow effect's duration.
+        /// Корутина для обработки эффекта замедления.
         /// </summary>
         private IEnumerator SlowEffect(float slowFactor, float duration)
         {
@@ -113,9 +173,9 @@ namespace Resources.Scripts.Enemy
         }
 
         /// <summary>
-        /// Applies an impulse force to the enemy.
+        /// Применяет импульс к врагу.
         /// </summary>
-        /// <param name="force">The force vector to apply.</param>
+        /// <param name="force">Вектор силы импульса.</param>
         public void ApplyPush(Vector2 force)
         {
             if (rb != null)

@@ -740,7 +740,6 @@ GameObject:
   - component: {fileID: 5281773716420271782}
   - component: {fileID: 8646127099139255146}
   - component: {fileID: 3997978414173444296}
-  - component: {fileID: 7109463011209514100}
   - component: {fileID: 332386016314584465}
   - component: {fileID: 3724251304007960441}
   - component: {fileID: 6893368160062511056}
@@ -821,7 +820,7 @@ SpriteRenderer:
   m_Size: {x: 10, y: 10}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!114 &8646127099139255146
@@ -836,8 +835,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae4878589b7a14708bf25b0e2d6d9512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  <FairyCount>k__BackingField: 0
-  <Health>k__BackingField: 20
+  health: 20
+  maxHealth: 50
+  maxMana: 100
+  currentMana: 0
+  manaRegenRate: 10
 --- !u!114 &3997978414173444296
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -854,23 +856,12 @@ MonoBehaviour:
   joystickSpeed: 2
   joystick: {fileID: 0}
   trapPrefab: {fileID: 726999753017517549, guid: 2883cba0652d4754ab1bd2e5e075b41d, type: 3}
---- !u!114 &7109463011209514100
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3897241861044481460}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ddc190adc141f8c4288d6186d5c645ba, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  trapPrefab: {fileID: 726999753017517549, guid: 2883cba0652d4754ab1bd2e5e075b41d, type: 3}
-  trapSpawnPoint: {fileID: 8453463847930933388}
-  cooldownTime: 10
-  cooldownFillImage: {fileID: 0}
-  cooldownText: {fileID: 0}
+  playerLight: {fileID: 0}
+  finishPoint: {fileID: 0}
+  baseLightRange: 1
+  maxLightRange: 2
+  isImmortal: 0
+  animator: {fileID: 0}
 --- !u!50 &332386016314584465
 Rigidbody2D:
   serializedVersion: 5
