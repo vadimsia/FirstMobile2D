@@ -6,21 +6,28 @@ using UnityEngine.Rendering.Universal;
 namespace Game.Scripts.Labyrinth
 {
     /// <summary>
-    /// Управляет отображением иконок миникарты: иконка старта, финиша и динамичная иконка игрока.
-    /// Префабы должны быть UI Image и находиться внутри RawImage, отображающего миникарту.
+    /// Manages the display of minimap icons: start, finish and dynamic player icon.
+    /// The prefabs must be UI Images and should be children of the RawImage displaying the minimap.
     /// </summary>
     public class LabyrinthMinimapIconController : MonoBehaviour
     {
-        [Header("Префабы иконок (UI Image)")]
-        [SerializeField] private GameObject startIconPrefab;
-        [SerializeField] private GameObject finishIconPrefab;
-        [SerializeField] private GameObject playerIconPrefab; // Префаб динамичной иконки игрока
+        [Header("Icon Prefabs (UI Image)")]
+        [SerializeField, Tooltip("Prefab for the start icon.")]
+        private GameObject startIconPrefab;
+        [SerializeField, Tooltip("Prefab for the finish icon.")]
+        private GameObject finishIconPrefab;
+        [SerializeField, Tooltip("Prefab for the dynamic player icon.")]
+        private GameObject playerIconPrefab;
 
-        [Header("Настройки миникарты")]
-        [SerializeField] private Camera minimapCamera; // Вторая камера для миникарты
-        [SerializeField] private RawImage minimapImage;  // RawImage, на котором отображается миникарта
+        [Header("Minimap Settings")]
+        [SerializeField, Tooltip("Camera used exclusively for the minimap.")]
+        private Camera minimapCamera;
+        [SerializeField, Tooltip("RawImage that displays the minimap.")]
+        private RawImage minimapImage;
+        [SerializeField, Tooltip("Maximum time (in seconds) to wait for start and finish cells to appear.")]
+        private float maxIconWaitTime = 5f;
 
-        private RectTransform rawImageRectTransform;   // RectTransform RawImage
+        private RectTransform rawImageRectTransform;
         private GameObject startIconInstance;
         private GameObject finishIconInstance;
         private GameObject playerIconInstance;
@@ -28,7 +35,7 @@ namespace Game.Scripts.Labyrinth
 
         private void Start()
         {
-            // Получаем RectTransform у RawImage миникарты
+            // Get the RectTransform from the minimap RawImage.
             if (minimapImage != null)
             {
                 rawImageRectTransform = minimapImage.GetComponent<RectTransform>();
@@ -39,14 +46,14 @@ namespace Game.Scripts.Labyrinth
                 return;
             }
 
-            // Проверяем назначение миникамеры
+            // Check for the minimap camera assignment.
             if (minimapCamera == null)
             {
                 Debug.LogWarning("Minimap Camera is not assigned!");
                 return;
             }
 
-            // Находим объект игрока по тегу "Player"
+            // Find the player object by tag.
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null)
             {
@@ -57,17 +64,20 @@ namespace Game.Scripts.Labyrinth
                 Debug.LogWarning("Player object not found!");
             }
 
-            // Запускаем корутину ожидания появления ячеек "Start" и "Finish"
+            // Start coroutine to wait for the appearance of the start and finish cells.
             StartCoroutine(InitializeIconsCoroutine());
         }
 
+        /// <summary>
+        /// Coroutine that waits for objects with tags "Start" and "Finish" to appear, then instantiates their icons.
+        /// </summary>
         private IEnumerator InitializeIconsCoroutine()
         {
             float timer = 0f;
             GameObject startCell = null;
             GameObject finishCell = null;
-            // Ждем появления объектов с тегами "Start" и "Finish" (до 5 секунд)
-            while (timer < 5f)
+            // Wait up to maxIconWaitTime seconds for objects with "Start" and "Finish" tags.
+            while (timer < maxIconWaitTime)
             {
                 startCell = GameObject.FindGameObjectWithTag("Start");
                 finishCell = GameObject.FindGameObjectWithTag("Finish");
@@ -79,7 +89,7 @@ namespace Game.Scripts.Labyrinth
 
             if (startCell == null)
             {
-                Debug.LogWarning("Start cell not found within 5 seconds!");
+                Debug.LogWarning("Start cell not found within " + maxIconWaitTime + " seconds!");
             }
             else if (startIconPrefab != null)
             {
@@ -95,7 +105,7 @@ namespace Game.Scripts.Labyrinth
 
             if (finishCell == null)
             {
-                Debug.LogWarning("Finish cell not found within 5 seconds!");
+                Debug.LogWarning("Finish cell not found within " + maxIconWaitTime + " seconds!");
             }
             else if (finishIconPrefab != null)
             {
@@ -109,7 +119,7 @@ namespace Game.Scripts.Labyrinth
                 finishRect.anchoredPosition = uiPos;
             }
 
-            // Создаем динамичную иконку игрока (если объект игрока найден)
+            // Create the dynamic player icon if the player object is found.
             if (playerTransform != null && playerIconPrefab != null)
             {
                 Vector2 uiPos = WorldToUISpace(playerTransform.position);
@@ -125,7 +135,7 @@ namespace Game.Scripts.Labyrinth
 
         private void Update()
         {
-            // Обновляем позицию иконки игрока относительно RawImage
+            // Update the player icon position relative to the RawImage.
             if (playerTransform != null && playerIconInstance != null)
             {
                 Vector2 uiPos = WorldToUISpace(playerTransform.position);
@@ -138,16 +148,15 @@ namespace Game.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Преобразует мировые координаты в координаты UI для RawImage, используя камеру миникарты.
-        /// Метод использует viewport-координаты для корректного позиционирования относительно RawImage.
+        /// Converts world coordinates to UI coordinates relative to the minimap RawImage using the minimap camera.
         /// </summary>
-        /// <param name="worldPos">Мировая позиция</param>
-        /// <returns>Локальные координаты RawImage (anchoredPosition)</returns>
+        /// <param name="worldPos">World position</param>
+        /// <returns>Local coordinates (anchoredPosition) for the RawImage</returns>
         private Vector2 WorldToUISpace(Vector3 worldPos)
         {
-            // Получаем viewport-координаты (значения от 0 до 1)
+            // Get viewport coordinates (values between 0 and 1)
             Vector3 viewportPos = minimapCamera.WorldToViewportPoint(worldPos);
-            // Преобразуем viewport-координаты в локальные координаты RawImage
+            // Convert viewport coordinates to local coordinates of the RawImage.
             Vector2 uiPos = new Vector2(
                 (viewportPos.x - 0.5f) * rawImageRectTransform.sizeDelta.x,
                 (viewportPos.y - 0.5f) * rawImageRectTransform.sizeDelta.y

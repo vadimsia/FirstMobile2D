@@ -3,9 +3,14 @@ using Resources.Scripts.Player;
 
 namespace Resources.Scripts.Labyrinth
 {
+    /// <summary>
+    /// Applies a bonus effect to the player when triggered.
+    /// </summary>
     public class LabyrinthBonusEffect : MonoBehaviour
     {
-        public float speedMultiplier = 1.5f; // Speed UP on 50%
+        [Header("Bonus Settings")]
+        [SerializeField, Tooltip("Multiplier to increase the player's speed.")]
+        public float speedMultiplier = 1.5f;
 
         private void OnTriggerEnter2D(Collider2D other)
         {
@@ -16,7 +21,6 @@ namespace Resources.Scripts.Labyrinth
                 {
                     player.IncreaseSpeed(speedMultiplier);
                 }
-
                 Destroy(gameObject);
             }
         }

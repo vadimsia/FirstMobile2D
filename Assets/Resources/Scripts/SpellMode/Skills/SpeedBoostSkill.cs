@@ -21,7 +21,7 @@ namespace Resources.Scripts.SpellMode.Skills
         /// </summary>
         protected override void ActivateSkill()
         {
-            // Use the recommended method to find any instance of PlayerController
+            // Find any instance of the PlayerController in the scene.
             PlayerController player = UnityEngine.Object.FindAnyObjectByType<PlayerController>();
             if (player != null)
             {

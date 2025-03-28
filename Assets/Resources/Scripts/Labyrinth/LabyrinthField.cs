@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
-    /// Generates and manages the labyrinth field.
+    /// Generates and manages the labyrinth field grid.
     /// </summary>
     public class LabyrinthField
     {
@@ -24,8 +24,8 @@ namespace Resources.Scripts.Labyrinth
         /// <summary>
         /// Constructor that initializes and creates the labyrinth.
         /// </summary>
-        /// <param name="rows">Number of rows in the labyrinth.</param>
-        /// <param name="cols">Number of columns in the labyrinth.</param>
+        /// <param name="rows">Number of rows.</param>
+        /// <param name="cols">Number of columns.</param>
         public LabyrinthField(int rows, int cols)
         {
             Rows = rows;
@@ -72,7 +72,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Determines whether a bottom border can be set for cells with the given array value.
+        /// Checks if a bottom border can be set for cells in the specified row with a given array value.
         /// </summary>
         private bool CanSetBottomBorder(int row, int arrayValue)
         {
@@ -104,7 +104,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Preprocesses a row before generating its maze structure.
+        /// Prepares a row before generating its maze structure.
         /// </summary>
         private void PreprocessRow(int row)
         {
@@ -124,7 +124,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Processes a row by assigning array values and random borders.
+        /// Processes a row by assigning array values, setting right borders and merging cells.
         /// </summary>
         private void ProcessRow(int row)
         {
@@ -243,7 +243,7 @@ namespace Resources.Scripts.Labyrinth
         /// <summary>
         /// Finds the shortest path from start to finish using BFS.
         /// </summary>
-        /// <returns>A list of cell coordinates representing the path.</returns>
+        /// <returns>List of cell coordinates representing the path.</returns>
         private List<Vector2Int> FindShortestPath()
         {
             Queue<Vector2Int> queue = new Queue<Vector2Int>();
@@ -314,7 +314,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Returns the world position for the finish cell (assumes each cell is 1 unit in size).
+        /// Returns the world position of the finish cell.
         /// </summary>
         public Vector3 GetFinishWorldPosition()
         {
@@ -323,9 +323,7 @@ namespace Resources.Scripts.Labyrinth
 
         /// <summary>
         /// Returns the solution path as a list of world positions.
-        /// The conversion assumes that when instantiating cells, the position is set as (col, -row, 0).
-        /// Since LabyrinthField uses row for x and col for y in the grid,
-        /// we convert a cell coordinate (row, col) to world position (col, -row, 0).
+        /// Conversion: worldX = cell.y, worldY = -cell.x.
         /// </summary>
         public List<Vector3> GetSolutionPathWorldPositions()
         {
@@ -333,7 +331,6 @@ namespace Resources.Scripts.Labyrinth
             List<Vector3> worldPath = new List<Vector3>();
             foreach (Vector2Int cell in path)
             {
-                // Convert: worldX = cell.y, worldY = -cell.x
                 worldPath.Add(new Vector3(cell.y, -cell.x, 0f));
             }
             return worldPath;

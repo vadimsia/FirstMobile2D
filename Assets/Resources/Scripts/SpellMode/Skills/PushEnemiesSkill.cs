@@ -24,10 +24,13 @@ namespace Resources.Scripts.SpellMode.Skills
         /// </summary>
         protected override void ActivateSkill()
         {
-            // Set up a default contact filter (adjust filter options as needed)
-            ContactFilter2D filter = new ContactFilter2D();
-            filter.useTriggers = false;
-            // Use the non-allocating overload of OverlapCircle
+            // Set up a default contact filter; triggers are not included.
+            ContactFilter2D filter = new ContactFilter2D
+            {
+                useTriggers = false
+            };
+
+            // Use the non-allocating OverlapCircle to get colliders.
             int count = Physics2D.OverlapCircle(transform.position, effectRadius, filter, resultsBuffer);
             for (int i = 0; i < count; i++)
             {
@@ -37,6 +40,7 @@ namespace Resources.Scripts.SpellMode.Skills
                     EnemyController enemy = hit.GetComponent<EnemyController>();
                     if (enemy != null)
                     {
+                        // Calculate the push direction away from this skill's position.
                         Vector2 direction = (hit.transform.position - transform.position).normalized;
                         enemy.ApplyPush(direction * pushForce);
                     }
@@ -46,7 +50,7 @@ namespace Resources.Scripts.SpellMode.Skills
         }
 
         /// <summary>
-        /// Draws the effect radius in the editor.
+        /// Draws the effect radius in the editor for visualization.
         /// </summary>
         private void OnDrawGizmosSelected()
         {
