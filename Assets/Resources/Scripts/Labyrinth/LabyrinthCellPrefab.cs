@@ -4,36 +4,43 @@ using UnityEngine.UI;
 namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
-    /// Initializes the visual representation of a labyrinth cell,
-    /// setting borders, text and tags based on cell data.
+    /// Инициализирует визуальное представление ячейки лабиринта:
+    /// выставляет видимость границ, текстовое значение и теги на основе данных ячейки.
+    /// Также рассчитывает порядок отрисовки стен для корректного перекрытия.
     /// </summary>
     public class LabyrinthCellPrefab : MonoBehaviour
     {
         [Header("Border GameObjects")]
-        [SerializeField, Tooltip("GameObject for the top border.")]
+        [SerializeField, Tooltip("Объект для верхней границы.")]
         private GameObject topBorder;
-        [SerializeField, Tooltip("GameObject for the right border.")]
+        [SerializeField, Tooltip("Объект для правой границы.")]
         private GameObject rightBorder;
-        [SerializeField, Tooltip("GameObject for the bottom border.")]
+        [SerializeField, Tooltip("Объект для нижней границы.")]
         private GameObject bottomBorder;
-        [SerializeField, Tooltip("GameObject for the left border.")]
+        [SerializeField, Tooltip("Объект для левой границы.")]
         private GameObject leftBorder;
 
         [Header("Text Settings")]
-        [SerializeField, Tooltip("UI Text component for displaying the cell's array value.")]
+        [SerializeField, Tooltip("UI-текст для отображения значения ячейки.")]
         private Text arrayValueText;
-        [SerializeField, Tooltip("Toggle text visibility.")]
+        [SerializeField, Tooltip("Отображать ли текст с значением.")]
         private bool showArrayValueText = true;
-        [SerializeField, Range(0f, 1f), Tooltip("Default text alpha (transparency).")]
+        [SerializeField, Range(0f, 1f), Tooltip("Прозрачность текста по умолчанию.")]
         private float defaultTextAlpha = 0.5f;
 
         [Header("Cell Type Settings")]
-        [SerializeField, Tooltip("If true, this cell represents the finish point.")]
+        [SerializeField, Tooltip("Если true, эта ячейка является точкой финиша.")]
         private bool isFinishCell = false;
+
+        [Header("Sorting Settings")]
+        [SerializeField, Tooltip("Высота ячейки для расчёта порядка отрисовки (должна совпадать с cellSizeY в генераторе).")]
+        private float cellSizeY = 1f;
+        [SerializeField, Tooltip("Смещение для сортировки между рядами (должно быть больше 1).")]
+        private int sortingOffset = 10;
 
         private void Awake()
         {
-            // Ensure a BoxCollider2D is attached and set as trigger.
+            // Убеждаемся, что присутствует компонент BoxCollider2D, настроенный как триггер.
             BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
             if (boxCollider == null)
             {
@@ -42,11 +49,53 @@ namespace Resources.Scripts.Labyrinth
             boxCollider.isTrigger = true;
         }
 
+        private void Start()
+        {
+            // После позиционирования ячейки обновляем порядок сортировки стен.
+            UpdateSortingOrders();
+        }
+
         /// <summary>
-        /// Processes a border GameObject: enables/disables it based on hasBorder.
+        /// Рассчитывает и назначает порядки сортировки для стен ячейки.
+        /// Для ячейки в ряду r:
+        ///   - Верхняя, левая и правая стены: sortingOrder = r * sortingOffset
+        ///   - Нижняя стена: sortingOrder = r * sortingOffset + 1
+        /// Это гарантирует, что нижняя стена будет отрисована поверх остальных.
         /// </summary>
-        /// <param name="borderObject">Border GameObject reference.</param>
-        /// <param name="hasBorder">Should the border be visible?</param>
+        private void UpdateSortingOrders()
+        {
+            int rowIndex = Mathf.RoundToInt(-transform.position.y / cellSizeY);
+            int baseOrder = rowIndex * sortingOffset;
+
+            if (topBorder != null)
+            {
+                SpriteRenderer sr = topBorder.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sortingOrder = baseOrder;
+            }
+            if (leftBorder != null)
+            {
+                SpriteRenderer sr = leftBorder.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sortingOrder = baseOrder;
+            }
+            if (rightBorder != null)
+            {
+                SpriteRenderer sr = rightBorder.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sortingOrder = baseOrder;
+            }
+            if (bottomBorder != null)
+            {
+                SpriteRenderer sr = bottomBorder.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sortingOrder = baseOrder + 1;
+            }
+        }
+
+        /// <summary>
+        /// Включает или отключает объект границы в зависимости от флага.
+        /// </summary>
         private void ProcessBorder(GameObject borderObject, bool hasBorder)
         {
             if (borderObject != null)
@@ -56,9 +105,9 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Initializes the cell prefab based on provided cell data.
+        /// Инициализирует ячейку на основе переданных данных.
+        /// Выставляет видимость границ, текстовое значение и теги.
         /// </summary>
-        /// <param name="cell">Labyrinth cell data.</param>
         public void Init(LabyrinthCell cell)
         {
             ProcessBorder(topBorder, cell.TopBorder);
@@ -66,19 +115,18 @@ namespace Resources.Scripts.Labyrinth
             ProcessBorder(bottomBorder, cell.BottomBorder);
             ProcessBorder(leftBorder, cell.LeftBorder);
 
-            // Set cell text and color based on cell type.
             if (cell.IsStart)
             {
                 arrayValueText.text = "S";
                 arrayValueText.color = new Color(0f, 1f, 0f, defaultTextAlpha);
-                gameObject.tag = "Start";
+                gameObject.tag = "Start"; // Убедитесь, что тег "Start" добавлен в проект.
             }
             else if (cell.IsFinish)
             {
                 arrayValueText.text = "F";
                 arrayValueText.color = new Color(1f, 0f, 0f, defaultTextAlpha);
                 isFinishCell = true;
-                gameObject.tag = "Finish";
+                gameObject.tag = "Finish"; // Аналогично, тег "Finish" должен существовать.
             }
             else if (cell.IsSolutionPath)
             {
@@ -98,7 +146,7 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Updates the text visibility by adjusting its alpha.
+        /// Обновляет прозрачность текста в зависимости от флага видимости.
         /// </summary>
         private void UpdateTextVisibility()
         {
@@ -110,12 +158,17 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
+        /// <summary>
+        /// Если это финишная ячейка и игрок входит в неё, происходит загрузка сцены.
+        /// </summary>
         private void OnTriggerEnter2D(Collider2D other)
         {
-            // If the finish cell collides with the player, load the designated scene.
+            // Если данная ячейка является финишной и столкновение происходит с объектом игрока.
             if (isFinishCell && other.CompareTag("Player"))
             {
-                UnityEngine.SceneManagement.SceneManager.LoadScene("FirstPartScene");
+                // Здесь можно вызвать событие завершения лабиринта.
+                // Пока загружается сцена "FirstPartScene". При необходимости замените на нужное имя.
+                UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
             }
         }
     }

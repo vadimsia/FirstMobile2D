@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
-    /// Generates and manages the labyrinth field grid.
+    /// Генерирует и управляет полем лабиринта.
     /// </summary>
     public class LabyrinthField
     {
@@ -12,33 +12,34 @@ namespace Resources.Scripts.Labyrinth
         public int Rows { get; }
         public int Cols { get; }
 
+        // Размеры клетки
+        private float cellSizeX;
+        private float cellSizeY;
+
         private int uniqueCounter = 1;
         private Vector2Int startCell;
         private Vector2Int finishCell;
 
         /// <summary>
-        /// Gets the coordinates of the start cell.
+        /// Координаты стартовой ячейки.
         /// </summary>
         public Vector2Int StartCellCoordinates => startCell;
 
         /// <summary>
-        /// Constructor that initializes and creates the labyrinth.
+        /// Конструктор, инициализирующий лабиринт.
         /// </summary>
-        /// <param name="rows">Number of rows.</param>
-        /// <param name="cols">Number of columns.</param>
-        public LabyrinthField(int rows, int cols)
+        public LabyrinthField(int rows, int cols, float cellSizeX, float cellSizeY)
         {
             Rows = rows;
             Cols = cols;
+            this.cellSizeX = cellSizeX;
+            this.cellSizeY = cellSizeY;
             InitField();
             CreateLabyrinth();
             SetStartAndFinish();
             SolveMaze();
         }
 
-        /// <summary>
-        /// Initializes the labyrinth field with new cells.
-        /// </summary>
         private void InitField()
         {
             Field = new LabyrinthCell[Rows, Cols];
@@ -51,9 +52,6 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        /// <summary>
-        /// Sets the outer borders for the labyrinth.
-        /// </summary>
         private void SetBorders()
         {
             for (int row = 0; row < Rows; row++)
@@ -71,9 +69,6 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        /// <summary>
-        /// Checks if a bottom border can be set for cells in the specified row with a given array value.
-        /// </summary>
         private bool CanSetBottomBorder(int row, int arrayValue)
         {
             int count = 0;
@@ -91,9 +86,6 @@ namespace Resources.Scripts.Labyrinth
             return count - 1 != borderCount;
         }
 
-        /// <summary>
-        /// Changes the array values for all cells in the specified row.
-        /// </summary>
         private void ChangeArrayValues(int row, int oldArrayValue, int newArrayValue)
         {
             for (int col = 0; col < Cols; col++)
@@ -103,9 +95,6 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        /// <summary>
-        /// Prepares a row before generating its maze structure.
-        /// </summary>
         private void PreprocessRow(int row)
         {
             if (row == 0)
@@ -123,12 +112,8 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        /// <summary>
-        /// Processes a row by assigning array values, setting right borders and merging cells.
-        /// </summary>
         private void ProcessRow(int row)
         {
-            // Assign unique array values where needed.
             for (int col = 0; col < Cols; col++)
             {
                 var cell = Field[row, col];
@@ -136,7 +121,6 @@ namespace Resources.Scripts.Labyrinth
                     cell.ArrayValue = uniqueCounter++;
             }
 
-            // Decide right borders and merge cells.
             for (int col = 0; col < Cols - 1; col++)
             {
                 var cell = Field[row, col];
@@ -156,7 +140,6 @@ namespace Resources.Scripts.Labyrinth
                 }
             }
 
-            // Decide bottom borders randomly if allowed.
             for (int col = 0; col < Cols; col++)
             {
                 var cell = Field[row, col];
@@ -172,9 +155,6 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        /// <summary>
-        /// Final adjustments to ensure proper maze connectivity.
-        /// </summary>
         private void PostProcess()
         {
             int lastRow = Rows - 1;
@@ -191,9 +171,6 @@ namespace Resources.Scripts.Labyrinth
             SetBorders();
         }
 
-        /// <summary>
-        /// Creates the labyrinth by processing all rows.
-        /// </summary>
         private void CreateLabyrinth()
         {
             for (int row = 0; row < Rows; row++)
@@ -204,9 +181,6 @@ namespace Resources.Scripts.Labyrinth
             PostProcess();
         }
 
-        /// <summary>
-        /// Randomly selects and marks the start and finish cells from the four corners.
-        /// </summary>
         private void SetStartAndFinish()
         {
             List<Vector2Int> corners = new List<Vector2Int>
@@ -228,9 +202,6 @@ namespace Resources.Scripts.Labyrinth
             Field[finishCell.x, finishCell.y].IsFinish = true;
         }
 
-        /// <summary>
-        /// Marks the solution path in the labyrinth using Breadth-First Search (BFS).
-        /// </summary>
         private void SolveMaze()
         {
             List<Vector2Int> shortestPath = FindShortestPath();
@@ -240,17 +211,12 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        /// <summary>
-        /// Finds the shortest path from start to finish using BFS.
-        /// </summary>
-        /// <returns>List of cell coordinates representing the path.</returns>
         private List<Vector2Int> FindShortestPath()
         {
             Queue<Vector2Int> queue = new Queue<Vector2Int>();
             bool[,] visited = new bool[Rows, Cols];
             Vector2Int[,] prev = new Vector2Int[Rows, Cols];
 
-            // Initialize previous positions.
             for (int i = 0; i < Rows; i++)
                 for (int j = 0; j < Cols; j++)
                     prev[i, j] = new Vector2Int(-1, -1);
@@ -293,9 +259,6 @@ namespace Resources.Scripts.Labyrinth
             return path;
         }
 
-        /// <summary>
-        /// Returns the accessible neighbors for the cell at the specified row and column.
-        /// </summary>
         private List<Vector2Int> GetNeighbors(int row, int col)
         {
             List<Vector2Int> neighbors = new List<Vector2Int>();
@@ -314,16 +277,15 @@ namespace Resources.Scripts.Labyrinth
         }
 
         /// <summary>
-        /// Returns the world position of the finish cell.
+        /// Возвращает мировую позицию финишной ячейки.
         /// </summary>
         public Vector3 GetFinishWorldPosition()
         {
-            return new Vector3(finishCell.x, finishCell.y, 0f);
+            return new Vector3(finishCell.y * cellSizeX, -finishCell.x * cellSizeY, 0f);
         }
 
         /// <summary>
-        /// Returns the solution path as a list of world positions.
-        /// Conversion: worldX = cell.y, worldY = -cell.x.
+        /// Возвращает мировой путь решения лабиринта.
         /// </summary>
         public List<Vector3> GetSolutionPathWorldPositions()
         {
@@ -331,9 +293,17 @@ namespace Resources.Scripts.Labyrinth
             List<Vector3> worldPath = new List<Vector3>();
             foreach (Vector2Int cell in path)
             {
-                worldPath.Add(new Vector3(cell.y, -cell.x, 0f));
+                worldPath.Add(new Vector3(cell.y * cellSizeX, -cell.x * cellSizeY, 0f));
             }
             return worldPath;
+        }
+
+        /// <summary>
+        /// Возвращает мировую позицию стартовой ячейки.
+        /// </summary>
+        public Vector3 GetStartWorldPosition()
+        {
+            return new Vector3(startCell.y * cellSizeX, -startCell.x * cellSizeY, 0f);
         }
     }
 }
