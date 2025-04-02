@@ -16,6 +16,10 @@ namespace Resources.Scripts.Player
         [SerializeField, Tooltip("Handle RectTransform of the joystick.")]
         private RectTransform handle;
 
+        [Header("Joystick Handle Settings")]
+        [SerializeField, Tooltip("Максимальное расстояние движения handle от центра джойстика.")]
+        private float handleRange = 50f;
+
         // The current input vector (normalized) representing joystick movement.
         private Vector2 inputVector = Vector2.zero;
 
@@ -47,8 +51,8 @@ namespace Resources.Scripts.Player
                 if (inputVector.sqrMagnitude > 1f)
                     inputVector.Normalize();
 
-                // Set the handle position (adjusting by a fraction of the background size).
-                handle.anchoredPosition = inputVector * (background.sizeDelta / 3);
+                // Set the handle position using the configurable handleRange.
+                handle.anchoredPosition = inputVector * handleRange;
             }
         }
 

@@ -180,6 +180,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   background: {fileID: 2094875851611427751}
   handle: {fileID: 5333023467039656368}
+  handleRange: 125
 --- !u!210 &386596725528801089
 SortingGroup:
   m_ObjectHideFlags: 0

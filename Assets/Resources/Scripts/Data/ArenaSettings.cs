@@ -17,5 +17,12 @@ namespace Resources.Scripts.Data
 
         [Tooltip("Типы врагов (префабы)")]
         public GameObject[] enemyPrefabs;
+
+        [Header("Параметры фей")]
+        [Tooltip("Количество фей на арене")]
+        public int fairyCount = 3;
+
+        [Tooltip("Типы фей (префабы)")]
+        public GameObject[] fairyPrefabs;
     }
 }

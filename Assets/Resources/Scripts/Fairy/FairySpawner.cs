@@ -1,18 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Resources.Scripts.Data; // чтобы получить доступ к ArenaSettings
 
 namespace Resources.Scripts.Fairy
 {
     /// <summary>
-    /// Spawns fairies in the scene at specified intervals.
+    /// Spawns fairies in the scene at specified intervals, using settings defined in ArenaSettings.
     /// </summary>
     public class FairySpawner : MonoBehaviour
     {
-        [Header("Spawning Settings")]
-        [SerializeField, Tooltip("List of fairy prefabs to spawn.")]
-        private List<GameObject> fairyPrefabs;
-        [SerializeField, Range(1, 20), Tooltip("Maximum number of fairies allowed simultaneously.")]
+        [Header("Spawning Settings (from ArenaSettings)")]
+        [SerializeField, Tooltip("Reference to the ArenaSettings asset to retrieve fairy configuration.")]
+        private ArenaSettings arenaSettings;
+
+        // Локальные переменные для настроек фей.
+        private List<GameObject> fairyPrefabs = new List<GameObject>();
         private int maxFairies = 5;
+        
         [SerializeField, Range(1f, 30f), Tooltip("Time interval between spawns in seconds.")]
         private float spawnInterval = 5f;
         [SerializeField, Tooltip("Radius of the spawn area offset. Set to 0 for fixed spawn position.")]
@@ -29,6 +33,24 @@ namespace Resources.Scripts.Fairy
         private void Start()
         {
             timer = spawnInterval;
+
+            if (arenaSettings != null)
+            {
+                // Используем настройки из ArenaSettings.
+                maxFairies = arenaSettings.fairyCount;
+                if (arenaSettings.fairyPrefabs != null && arenaSettings.fairyPrefabs.Length > 0)
+                {
+                    fairyPrefabs.AddRange(arenaSettings.fairyPrefabs);
+                }
+                else
+                {
+                    Debug.LogWarning("В ArenaSettings не заданы префабы фей.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("ArenaSettings не назначены в FairySpawner.");
+            }
         }
 
         /// <summary>
@@ -37,18 +59,18 @@ namespace Resources.Scripts.Fairy
         /// <param name="prefab">The fairy prefab to spawn.</param>
         private void Spawn(GameObject prefab)
         {
-            // Ensure there is at least one fairy prefab in the list.
+            // Проверяем, что список префабов заполнен.
             if (fairyPrefabs == null || fairyPrefabs.Count == 0)
                 return;
 
-            // Do not spawn if the maximum number of fairies is reached.
+            // Не спавним, если достигнуто максимальное количество фей.
             if (transform.childCount >= maxFairies)
                 return;
 
             Vector3 spawnPosition = transform.position;
             if (randomizeSpawnPosition && spawnAreaRadius > 0f)
             {
-                // Calculate a random position within a circle of given radius.
+                // Вычисляем случайное смещение в пределах заданного радиуса.
                 Vector2 randomOffset = Random.insideUnitCircle * spawnAreaRadius;
                 spawnPosition += new Vector3(randomOffset.x, randomOffset.y, 0f);
             }
@@ -71,7 +93,7 @@ namespace Resources.Scripts.Fairy
             timer -= Time.deltaTime;
             if (timer <= 0)
             {
-                // Randomly select a fairy prefab from the list to spawn.
+                // Выбираем случайный префаб из списка и спавним его.
                 if (fairyPrefabs != null && fairyPrefabs.Count > 0)
                 {
                     Spawn(fairyPrefabs[Random.Range(0, fairyPrefabs.Count)]);

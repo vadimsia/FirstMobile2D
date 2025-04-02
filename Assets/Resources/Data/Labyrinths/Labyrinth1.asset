@@ -17,3 +17,6 @@ MonoBehaviour:
   cellSizeX: 0.8
   cellSizeY: 0.8
   labyrinthTimeLimit: 15
+  cameraPosition: {x: 3.61, y: -3.56, z: -2.271334}
+  cameraRotation: {x: 0, y: 0, z: 0}
+  cameraSize: 4.2

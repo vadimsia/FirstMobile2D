@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using TMPro;
 using Resources.Scripts.Data;
 
@@ -12,6 +13,10 @@ namespace Resources.Scripts.GameManagers
 
         [Header("UI Таймер")]
         [SerializeField] private TextMeshProUGUI timerText;
+
+        // Добавляем ссылку на UI image (стрелка)
+        [Header("UI Стрелка таймера (Clock Hand)")]
+        [SerializeField] private RectTransform clockHand;
 
         private ArenaSettings currentSettings;
         private float timer;
@@ -30,6 +35,11 @@ namespace Resources.Scripts.GameManagers
             }
 
             timer = currentSettings.survivalTime;
+            // Устанавливаем начальный поворот стрелки (–90 градусов по Z)
+            if (clockHand != null)
+            {
+                clockHand.localRotation = Quaternion.Euler(0f, 0f, -90f);
+            }
             InitializeArena();
         }
 
@@ -68,9 +78,19 @@ namespace Resources.Scripts.GameManagers
 
         private void UpdateTimerUI()
         {
+            // Обновляем текст таймера
             if (timerText != null)
             {
-                timerText.text = $"Время: {timer:F1}";
+                timerText.text = $"{timer:F1}";
+            }
+
+            // Обновляем поворот стрелки таймера
+            if (clockHand != null)
+            {
+                // При полном времени (timer == survivalTime) угол = -90, при нуле — -450.
+                float normalizedTime = Mathf.Clamp01(timer / currentSettings.survivalTime);
+                float angle = -90f - (1f - normalizedTime) * 360f;
+                clockHand.localRotation = Quaternion.Euler(0f, 0f, angle);
             }
         }
 
