@@ -23,10 +23,21 @@ namespace Resources.Scripts.Fairy
 
         [Header("Debug Settings")]
         [SerializeField, Tooltip("Enable debug logging for fairy movement.")]
-        private bool debugLog = false;
+        private bool debugLog;
 
         private Vector3 startPosition;
         private Vector3 targetPosition;
+        private SpriteRenderer spriteRenderer;
+
+        private void Awake()
+        {
+            // Получаем компонент SpriteRenderer для управления отображением спрайта
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            if(spriteRenderer == null)
+            {
+                Debug.LogWarning("SpriteRenderer component is missing on Fairy object.");
+            }
+        }
 
         /// <summary>
         /// Initializes the fairy with a starting position.
@@ -63,7 +74,16 @@ namespace Resources.Scripts.Fairy
             }
 
             // Smoothly move the fairy towards the target position.
-            transform.position = Vector3.Lerp(transform.position, targetPosition, speed * Time.deltaTime);
+            Vector3 newPosition = Vector3.Lerp(transform.position, targetPosition, speed * Time.deltaTime);
+            Vector3 moveDirection = newPosition - transform.position;
+            transform.position = newPosition;
+
+            // Обновляем направление спрайта: если движение вправо, переворачиваем спрайт
+            if (spriteRenderer != null && moveDirection.x != 0)
+            {
+                // По умолчанию спрайт смотрит влево (flipX == false)
+                spriteRenderer.flipX = moveDirection.x > 0;
+            }
         }
 
         /// <summary>

@@ -20,5 +20,15 @@ namespace Resources.Scripts.Data
 
         [Tooltip("Время на прохождение лабиринта (в секундах)")]
         public float labyrinthTimeLimit = 30f;
+
+        [Header("Настройки камеры")]
+        [Tooltip("Позиция камеры для данного лабиринта")]
+        public Vector3 cameraPosition = Vector3.zero;
+
+        [Tooltip("Угол поворота камеры (Euler) для данного лабиринта")]
+        public Vector3 cameraRotation = Vector3.zero;
+
+        [Tooltip("Размер камеры (orthographicSize) для данного лабиринта")]
+        public float cameraSize = 5f;
     }
 }

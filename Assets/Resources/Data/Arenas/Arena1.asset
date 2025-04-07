@@ -17,3 +17,7 @@ MonoBehaviour:
   enemyCount: 5
   enemyPrefabs:
   - {fileID: 7260566827850767976, guid: b89c68620d9c2c441b0d4ecce42ea97d, type: 3}
+  fairyCount: 3
+  fairyPrefabs:
+  - {fileID: 6405068590111382987, guid: ef6d34214eb1c8b4dac7a9f2245ec954, type: 3}
+  - {fileID: 6736815374581924620, guid: 3946273de00f6524ba3d74dbc323750f, type: 3}

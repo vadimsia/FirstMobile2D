@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using TMPro;
 using Resources.Scripts.Data;
 using Resources.Scripts.Misc;
+
 namespace Resources.Scripts.Labyrinth
 {
     public class LabyrinthGenerator : MonoBehaviour
@@ -36,9 +37,13 @@ namespace Resources.Scripts.Labyrinth
 
         [Header("UI Таймер")]
         [SerializeField] private TextMeshProUGUI timerText;
+        [SerializeField, Tooltip("UI Стрелка таймера. Изначальный поворот по Z = -90")]
+        private RectTransform clockHand;
 
         // Время на прохождение лабиринта
         private float labyrinthTimer;
+        // Сохраняем изначальное значение времени, чтобы рассчитать нормализацию
+        private float totalLabyrinthTime;
 
         private LabyrinthField labyrinth;
         private int rows, cols;
@@ -62,6 +67,15 @@ namespace Resources.Scripts.Labyrinth
                 cellSizeX = defaultCellSizeX;
                 cellSizeY = defaultCellSizeY;
                 labyrinthTimer = defaultTimeLimit;
+            }
+
+            // Сохраняем общее время для нормализации
+            totalLabyrinthTime = labyrinthTimer;
+
+            // Устанавливаем начальный поворот стрелки (–90 градусов по Z)
+            if (clockHand != null)
+            {
+                clockHand.localRotation = Quaternion.Euler(0f, 0f, -90f);
             }
 
             labyrinth = new LabyrinthField(rows, cols, cellSizeX, cellSizeY);
@@ -173,7 +187,15 @@ namespace Resources.Scripts.Labyrinth
         {
             if (timerText != null)
             {
-                timerText.text = $"Время: {labyrinthTimer:F1}";
+                timerText.text = $"{labyrinthTimer:F1}";
+            }
+
+            // Обновляем поворот стрелки таймера
+            if (clockHand != null && totalLabyrinthTime > 0)
+            {
+                float normalizedTime = Mathf.Clamp01(labyrinthTimer / totalLabyrinthTime);
+                float angle = -90f - (1f - normalizedTime) * 360f;
+                clockHand.localRotation = Quaternion.Euler(0f, 0f, angle);
             }
         }
 

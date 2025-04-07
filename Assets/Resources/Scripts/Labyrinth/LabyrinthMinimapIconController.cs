@@ -2,8 +2,9 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering.Universal;
+using Resources.Scripts.Data;
 
-namespace Game.Scripts.Labyrinth
+namespace Resources.Scripts.Labyrinth
 {
     /// <summary>
     /// Manages the display of minimap icons: start, finish and dynamic player icon.
@@ -27,6 +28,10 @@ namespace Game.Scripts.Labyrinth
         [SerializeField, Tooltip("Maximum time (in seconds) to wait for start and finish cells to appear.")]
         private float maxIconWaitTime = 5f;
 
+        [Header("Labyrinth Settings")]
+        [SerializeField, Tooltip("Labyrinth settings that include manual camera transform parameters.")]
+        private LabyrinthSettings labyrinthSettings;
+
         private RectTransform rawImageRectTransform;
         private GameObject startIconInstance;
         private GameObject finishIconInstance;
@@ -35,7 +40,7 @@ namespace Game.Scripts.Labyrinth
 
         private void Start()
         {
-            // Get the RectTransform from the minimap RawImage.
+            // Получаем RectTransform из RawImage миникарты.
             if (minimapImage != null)
             {
                 rawImageRectTransform = minimapImage.GetComponent<RectTransform>();
@@ -46,14 +51,26 @@ namespace Game.Scripts.Labyrinth
                 return;
             }
 
-            // Check for the minimap camera assignment.
+            // Проверяем назначение камеры миникарты.
             if (minimapCamera == null)
             {
                 Debug.LogWarning("Minimap Camera is not assigned!");
                 return;
             }
 
-            // Find the player object by tag.
+            // Если заданы настройки лабиринта, применяем позицию, поворот и размер камеры.
+            if (labyrinthSettings != null)
+            {
+                minimapCamera.transform.position = labyrinthSettings.cameraPosition;
+                minimapCamera.transform.eulerAngles = labyrinthSettings.cameraRotation;
+                minimapCamera.orthographicSize = labyrinthSettings.cameraSize;
+            }
+            else
+            {
+                Debug.LogWarning("LabyrinthSettings not assigned to LabyrinthMinimapIconController!");
+            }
+
+            // Ищем объект игрока по тегу.
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null)
             {
@@ -64,7 +81,7 @@ namespace Game.Scripts.Labyrinth
                 Debug.LogWarning("Player object not found!");
             }
 
-            // Start coroutine to wait for the appearance of the start and finish cells.
+            // Запускаем корутину ожидания появления ячеек с тегами "Start" и "Finish".
             StartCoroutine(InitializeIconsCoroutine());
         }
 
@@ -76,7 +93,7 @@ namespace Game.Scripts.Labyrinth
             float timer = 0f;
             GameObject startCell = null;
             GameObject finishCell = null;
-            // Wait up to maxIconWaitTime seconds for objects with "Start" and "Finish" tags.
+            // Ожидаем до maxIconWaitTime секунд появления объектов с тегами "Start" и "Finish".
             while (timer < maxIconWaitTime)
             {
                 startCell = GameObject.FindGameObjectWithTag("Start");
@@ -119,7 +136,7 @@ namespace Game.Scripts.Labyrinth
                 finishRect.anchoredPosition = uiPos;
             }
 
-            // Create the dynamic player icon if the player object is found.
+            // Создаем динамическую иконку игрока, если объект игрока найден.
             if (playerTransform != null && playerIconPrefab != null)
             {
                 Vector2 uiPos = WorldToUISpace(playerTransform.position);
@@ -135,7 +152,7 @@ namespace Game.Scripts.Labyrinth
 
         private void Update()
         {
-            // Update the player icon position relative to the RawImage.
+            // Обновляем позицию иконки игрока относительно RawImage.
             if (playerTransform != null && playerIconInstance != null)
             {
                 Vector2 uiPos = WorldToUISpace(playerTransform.position);
@@ -154,9 +171,9 @@ namespace Game.Scripts.Labyrinth
         /// <returns>Local coordinates (anchoredPosition) for the RawImage</returns>
         private Vector2 WorldToUISpace(Vector3 worldPos)
         {
-            // Get viewport coordinates (values between 0 and 1)
+            // Получаем координаты во viewport (значения от 0 до 1)
             Vector3 viewportPos = minimapCamera.WorldToViewportPoint(worldPos);
-            // Convert viewport coordinates to local coordinates of the RawImage.
+            // Преобразуем координаты viewport в локальные координаты RawImage.
             Vector2 uiPos = new Vector2(
                 (viewportPos.x - 0.5f) * rawImageRectTransform.sizeDelta.x,
                 (viewportPos.y - 0.5f) * rawImageRectTransform.sizeDelta.y

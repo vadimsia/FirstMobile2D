@@ -35,7 +35,7 @@ namespace Resources.Scripts.Labyrinth
         [Header("Sorting Settings")]
         [SerializeField, Tooltip("Высота ячейки для расчёта порядка отрисовки (должна совпадать с cellSizeY в генераторе).")]
         private float cellSizeY = 1f;
-        [SerializeField, Tooltip("Смещение для сортировки между рядами (должно быть больше 1).")]
+        [SerializeField, Tooltip("Смещение для сортировки между рядами (рекомендуется значение больше 1).")]
         private int sortingOffset = 10;
 
         private void Awake()
@@ -57,39 +57,44 @@ namespace Resources.Scripts.Labyrinth
 
         /// <summary>
         /// Рассчитывает и назначает порядки сортировки для стен ячейки.
-        /// Для ячейки в ряду r:
-        ///   - Верхняя, левая и правая стены: sortingOrder = r * sortingOffset
-        ///   - Нижняя стена: sortingOrder = r * sortingOffset + 1
-        /// Это гарантирует, что нижняя стена будет отрисована поверх остальных.
+        /// Базовый порядок рассчитывается с учётом ряда и столбца:
+        ///     baseOrder = rowIndex * sortingOffset + colIndex.
+        /// Для ячейки:
+        ///   - Верхняя стена: baseOrder + 0 (слой 0)
+        ///   - Левая и правая стены: baseOrder + 1 (слой 1)
+        ///   - Нижняя стена: baseOrder + 2 (слой 2)
+        /// Таким образом, ячейки с большими значениями ряда или столбца (нижние столбцы) будут отрисовываться поверх верхних.
         /// </summary>
         private void UpdateSortingOrders()
         {
+            // Вычисляем индекс ряда (учитывая, что y отрицательное для нижних ячеек) и индекс столбца.
             int rowIndex = Mathf.RoundToInt(-transform.position.y / cellSizeY);
-            int baseOrder = rowIndex * sortingOffset;
+            int colIndex = Mathf.RoundToInt(transform.position.x / cellSizeY);
+            int baseOrder = rowIndex * sortingOffset + colIndex;
 
             if (topBorder != null)
             {
                 SpriteRenderer sr = topBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder;
+                    sr.sortingOrder = baseOrder; // Верхняя стена – слой 0
             }
             if (leftBorder != null)
             {
                 SpriteRenderer sr = leftBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder;
+                    sr.sortingOrder = baseOrder + 1; // Левая стена – слой 1
             }
             if (rightBorder != null)
             {
                 SpriteRenderer sr = rightBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder;
+                    sr.sortingOrder = baseOrder + 1; // Правая стена – слой 1
             }
             if (bottomBorder != null)
             {
                 SpriteRenderer sr = bottomBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder + 1;
+                    sr.sortingOrder = baseOrder + 2; // Нижняя стена – слой 2
             }
         }
 
@@ -167,7 +172,7 @@ namespace Resources.Scripts.Labyrinth
             if (isFinishCell && other.CompareTag("Player"))
             {
                 // Здесь можно вызвать событие завершения лабиринта.
-                // Пока загружается сцена "FirstPartScene". При необходимости замените на нужное имя.
+                // Пока загружается сцена "Menu". При необходимости замените на нужное имя.
                 UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
             }
         }
