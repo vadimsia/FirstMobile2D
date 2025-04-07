@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5609987}
   - component: {fileID: 5609988}
+  - component: {fileID: 5609989}
   m_Layer: 3
   m_Name: Labyrinth
   m_TagString: Untagged
@@ -158,7 +159,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5609986}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87d0c176fd17543aca71afe4058c0466, type: 3}
   m_Name: 
@@ -176,6 +177,49 @@ MonoBehaviour:
   trapCount: 20
   timerText: {fileID: 510836962}
   clockHand: {fileID: 510836960}
+--- !u!114 &5609989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5609986}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9df50f40c47421045b73e25e00198676, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  labyrinthSettings: {fileID: 11400000, guid: 702939bdeb212ec498f4019ff898cc0f, type: 2}
+  defaultRows: 10
+  defaultCols: 10
+  defaultCellSizeX: 0.82
+  defaultCellSizeY: 0.7
+  defaultTimeLimit: 30
+  topWallPrefab: {fileID: 9187151119874588691, guid: f673001af7cdd3546b948f733a0b8f44, type: 3}
+  bottomWallPrefab: {fileID: 6476023305480796975, guid: e293fdedf158cb14b82e528062ec84a7, type: 3}
+  leftWallPrefab: {fileID: 6127058919286614785, guid: 5bda52dba5c1a2c43b08c65e0569a684, type: 3}
+  rightWallPrefab: {fileID: 6459350706025179438, guid: b506b0df65e970449b3476ae9c2b2f88, type: 3}
+  leftNoIsoWallPrefab: {fileID: 5082289136535667910, guid: 496a48cc8f4e44e48929686c62c102df, type: 3}
+  rightNoIsoWallPrefab: {fileID: 9025852097395815732, guid: 97fc827e6962e57489706fa7306a857d, type: 3}
+  topWallSpacingY: -0.044
+  bottomWallSpacingY: 0.1
+  leftWallSpacingX: -0.044
+  rightWallSpacingX: -0.044
+  enableWallColliders: 1
+  horizontalColliderSize: {x: 8, y: 1.5}
+  topColliderOffset: {x: 0, y: 0.3}
+  bottomColliderOffset: {x: 0, y: 0.3}
+  verticalColliderSize: {x: 0.8, y: 7.8}
+  leftColliderOffset: {x: 0, y: 0}
+  rightColliderOffset: {x: 0, y: 0}
+  bonusPrefab: {fileID: 4851787157202972978, guid: 8a0a50a60819e014388d53fd15014872, type: 3}
+  trapPrefab: {fileID: 4432862800593702859, guid: aa8d140e969d673499c9788afe79c39a, type: 3}
+  minPlacementDistance: 5
+  bonusCount: 1
+  trapCount: 3
+  timerText: {fileID: 510836962}
+  clockHand: {fileID: 510836960}
+  sortingOffset: 10
 --- !u!1 &253669926
 GameObject:
   m_ObjectHideFlags: 0
@@ -365,7 +409,7 @@ PrefabInstance:
       objectReference: {fileID: 21300000, guid: dc35099ae33023842baf21f3780c7a46, type: 3}
     - target: {fileID: 5281773716420271782, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
       propertyPath: m_SortingOrder
-      value: 1
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 5281773716420271782, guid: c7da5a0aac065b74e8e251085a591756, type: 3}
       propertyPath: m_WasSpriteAssigned
@@ -28761,7 +28805,7 @@ PrefabInstance:
       objectReference: {fileID: 850082126}
     - target: {fileID: 3964076789637571633, guid: 744a0cc28fa1d5c438f0223611d30750, type: 3}
       propertyPath: m_SortingOrder
-      value: 100
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 4072724149692913899, guid: 744a0cc28fa1d5c438f0223611d30750, type: 3}
       propertyPath: minimapCamera

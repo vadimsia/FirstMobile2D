@@ -40,9 +40,7 @@ namespace Resources.Scripts.Labyrinth
         [SerializeField, Tooltip("UI Стрелка таймера. Изначальный поворот по Z = -90")]
         private RectTransform clockHand;
 
-        // Время на прохождение лабиринта
         private float labyrinthTimer;
-        // Сохраняем изначальное значение времени, чтобы рассчитать нормализацию
         private float totalLabyrinthTime;
 
         private LabyrinthField labyrinth;
@@ -51,7 +49,6 @@ namespace Resources.Scripts.Labyrinth
 
         private void Start()
         {
-            // Получаем настройки лабиринта из выбранного этапа, если они заданы
             if (GameStageManager.currentStageData != null && GameStageManager.currentStageData.labyrinthSettings != null)
             {
                 rows = GameStageManager.currentStageData.labyrinthSettings.rows;
@@ -69,10 +66,8 @@ namespace Resources.Scripts.Labyrinth
                 labyrinthTimer = defaultTimeLimit;
             }
 
-            // Сохраняем общее время для нормализации
             totalLabyrinthTime = labyrinthTimer;
 
-            // Устанавливаем начальный поворот стрелки (–90 градусов по Z)
             if (clockHand != null)
             {
                 clockHand.localRotation = Quaternion.Euler(0f, 0f, -90f);
@@ -81,7 +76,6 @@ namespace Resources.Scripts.Labyrinth
             labyrinth = new LabyrinthField(rows, cols, cellSizeX, cellSizeY);
             GenerateField();
 
-            // Устанавливаем позицию игрока на стартовую ячейку лабиринта.
             GameObject player = GameObject.FindGameObjectWithTag(ETag.Player.ToString());
             if (player != null)
             {
@@ -109,7 +103,16 @@ namespace Resources.Scripts.Labyrinth
                     GameObject cellObj = Instantiate(cellPrefab, cellPosition, Quaternion.identity, transform).gameObject;
                     cellObj.name = "R" + row + "C" + col;
 
-                    cellObj.GetComponent<LabyrinthCellPrefab>().Init(cell);
+                    // Вычисляем, есть ли у ячейки ниже соответствующая стена.
+                    bool belowLeftWall = false;
+                    bool belowRightWall = false;
+                    if (row < rows - 1)
+                    {
+                        belowLeftWall = labyrinth.Field[row + 1, col].LeftBorder;
+                        belowRightWall = labyrinth.Field[row + 1, col].RightBorder;
+                    }
+
+                    cellObj.GetComponent<LabyrinthCellPrefab>().Init(cell, row, col, cols, rows, belowLeftWall, belowRightWall);
                     cellObj.GetComponent<LabyrinthCellPrefab>().SendMessage("setCellSizeY", cellSizeY, SendMessageOptions.DontRequireReceiver);
 
                     if (!cell.IsStart && !cell.IsFinish)
@@ -122,7 +125,6 @@ namespace Resources.Scripts.Labyrinth
                 }
             }
 
-            // Расстановка бонусов
             if (solutionCells.Count > 0 && bonusPrefab != null && bonusCount > 0)
             {
                 List<GameObject> availableBonusCells = new List<GameObject>(solutionCells);
@@ -146,7 +148,6 @@ namespace Resources.Scripts.Labyrinth
                 }
             }
 
-            // Расстановка ловушек
             if (nonSolutionCells.Count > 0 && trapPrefab != null && trapCount > 0)
             {
                 List<GameObject> availableTrapCells = new List<GameObject>(nonSolutionCells);
@@ -178,7 +179,6 @@ namespace Resources.Scripts.Labyrinth
 
             if (labyrinthTimer <= 0f)
             {
-                // Если время вышло – возвращаем игрока на арену
                 LoadArenaScene();
             }
         }
@@ -190,7 +190,6 @@ namespace Resources.Scripts.Labyrinth
                 timerText.text = $"{labyrinthTimer:F1}";
             }
 
-            // Обновляем поворот стрелки таймера
             if (clockHand != null && totalLabyrinthTime > 0)
             {
                 float normalizedTime = Mathf.Clamp01(labyrinthTimer / totalLabyrinthTime);

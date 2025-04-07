@@ -12,7 +12,6 @@ namespace Resources.Scripts.Labyrinth
         public int Rows { get; }
         public int Cols { get; }
 
-        // Размеры клетки
         private float cellSizeX;
         private float cellSizeY;
 
@@ -20,14 +19,8 @@ namespace Resources.Scripts.Labyrinth
         private Vector2Int startCell;
         private Vector2Int finishCell;
 
-        /// <summary>
-        /// Координаты стартовой ячейки.
-        /// </summary>
         public Vector2Int StartCellCoordinates => startCell;
 
-        /// <summary>
-        /// Конструктор, инициализирующий лабиринт.
-        /// </summary>
         public LabyrinthField(int rows, int cols, float cellSizeX, float cellSizeY)
         {
             Rows = rows;
@@ -276,17 +269,11 @@ namespace Resources.Scripts.Labyrinth
             return neighbors;
         }
 
-        /// <summary>
-        /// Возвращает мировую позицию финишной ячейки.
-        /// </summary>
         public Vector3 GetFinishWorldPosition()
         {
             return new Vector3(finishCell.y * cellSizeX, -finishCell.x * cellSizeY, 0f);
         }
 
-        /// <summary>
-        /// Возвращает мировой путь решения лабиринта.
-        /// </summary>
         public List<Vector3> GetSolutionPathWorldPositions()
         {
             List<Vector2Int> path = FindShortestPath();
@@ -298,9 +285,6 @@ namespace Resources.Scripts.Labyrinth
             return worldPath;
         }
 
-        /// <summary>
-        /// Возвращает мировую позицию стартовой ячейки.
-        /// </summary>
         public Vector3 GetStartWorldPosition()
         {
             return new Vector3(startCell.y * cellSizeX, -startCell.x * cellSizeY, 0f);

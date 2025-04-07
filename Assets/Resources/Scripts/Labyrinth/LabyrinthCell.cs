@@ -8,23 +8,15 @@ namespace Resources.Scripts.Labyrinth
     /// </summary>
     public class LabyrinthCell
     {
-        // Флаги границ.
         public bool TopBorder;
         public bool RightBorder;
         public bool BottomBorder;
         public bool LeftBorder;
-
-        // Значение, используемое для объединения ячеек при генерации.
         public int ArrayValue;
-
-        // Специальные маркеры ячеек.
         public bool IsStart;
         public bool IsFinish;
         public bool IsSolutionPath;
 
-        /// <summary>
-        /// Конструктор по умолчанию.
-        /// </summary>
         public LabyrinthCell()
         {
             TopBorder = false;
@@ -37,9 +29,6 @@ namespace Resources.Scripts.Labyrinth
             IsSolutionPath = false;
         }
 
-        /// <summary>
-        /// Копирует некоторые свойства из другой ячейки.
-        /// </summary>
         public void Copy(LabyrinthCell reference)
         {
             RightBorder = reference.RightBorder;

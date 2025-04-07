@@ -19,10 +19,8 @@ namespace Resources.Scripts.Player
         private float keyboardSpeed = 3f;
         [SerializeField, Range(1, 10), Tooltip("Movement speed when using joystick input.")]
         private float joystickSpeed = 3f;
-
         [SerializeField, Tooltip("Reference to the custom joystick component (optional).")]
         private PlayerJoystick joystick;
-
         [SerializeField, Tooltip("Prefab for trap objects (if needed).")]
         private GameObject trapPrefab;
 
@@ -75,7 +73,7 @@ namespace Resources.Scripts.Player
         {
             while (finishPoint == null)
             {
-                GameObject finishObj = GameObject.FindGameObjectWithTag(ETag.Fairy.ToString()); // If finish marker uses a specific tag, update accordingly.
+                GameObject finishObj = GameObject.FindGameObjectWithTag(ETag.Fairy.ToString()); // Если finish marker использует другой тег, обновите условие.
                 if (finishObj != null)
                 {
                     finishPoint = finishObj.transform;
@@ -217,9 +215,10 @@ namespace Resources.Scripts.Player
 
         private IEnumerator StunCoroutine(float duration)
         {
+            float originalSlowMultiplier = currentSlowMultiplier;
             currentSlowMultiplier = 0f;
             yield return new WaitForSeconds(duration);
-            currentSlowMultiplier = 1f;
+            currentSlowMultiplier = originalSlowMultiplier;
         }
 
         /// <summary>
@@ -239,6 +238,27 @@ namespace Resources.Scripts.Player
             currentSlowMultiplier = slowFactor;
             yield return new WaitForSeconds(duration);
             currentSlowMultiplier = 1f;
+        }
+        
+        /// <summary>
+        /// Applies a binding effect to the player, temporarily disabling movement.
+        /// Это используется, например, при попадании снаряда гоблина.
+        /// </summary>
+        /// <param name="duration">Duration of the binding effect in seconds.</param>
+        public void ApplyBinding(float duration)
+        {
+            StartCoroutine(BindingCoroutine(duration));
+        }
+
+        private IEnumerator BindingCoroutine(float duration)
+        {
+            // Сохраняем текущий коэффициент замедления, затем блокируем движение.
+            float originalSlowMultiplier = currentSlowMultiplier;
+            currentSlowMultiplier = 0f;
+            Debug.Log("Игрок связан на " + duration + " секунд.");
+            yield return new WaitForSeconds(duration);
+            currentSlowMultiplier = originalSlowMultiplier;
+            Debug.Log("Игрок разблокирован.");
         }
     }
 }

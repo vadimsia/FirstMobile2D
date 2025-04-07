@@ -13,12 +13,18 @@ namespace Resources.Scripts.Labyrinth
         [Header("Border GameObjects")]
         [SerializeField, Tooltip("Объект для верхней границы.")]
         private GameObject topBorder;
-        [SerializeField, Tooltip("Объект для правой границы.")]
+        [SerializeField, Tooltip("Объект для правой границы (с изометрией).")]
         private GameObject rightBorder;
         [SerializeField, Tooltip("Объект для нижней границы.")]
         private GameObject bottomBorder;
-        [SerializeField, Tooltip("Объект для левой границы.")]
+        [SerializeField, Tooltip("Объект для левой границы (с изометрией).")]
         private GameObject leftBorder;
+
+        [Header("Дополнительные стены без изометрии")]
+        [SerializeField, Tooltip("Объект для левой стены без изометрического эффекта.")]
+        private GameObject leftNoIsoWall;
+        [SerializeField, Tooltip("Объект для правой стены без изометрического эффекта.")]
+        private GameObject rightNoIsoWall;
 
         [Header("Text Settings")]
         [SerializeField, Tooltip("UI-текст для отображения значения ячейки.")]
@@ -57,17 +63,9 @@ namespace Resources.Scripts.Labyrinth
 
         /// <summary>
         /// Рассчитывает и назначает порядки сортировки для стен ячейки.
-        /// Базовый порядок рассчитывается с учётом ряда и столбца:
-        ///     baseOrder = rowIndex * sortingOffset + colIndex.
-        /// Для ячейки:
-        ///   - Верхняя стена: baseOrder + 0 (слой 0)
-        ///   - Левая и правая стены: baseOrder + 1 (слой 1)
-        ///   - Нижняя стена: baseOrder + 2 (слой 2)
-        /// Таким образом, ячейки с большими значениями ряда или столбца (нижние столбцы) будут отрисовываться поверх верхних.
         /// </summary>
         private void UpdateSortingOrders()
         {
-            // Вычисляем индекс ряда (учитывая, что y отрицательное для нижних ячеек) и индекс столбца.
             int rowIndex = Mathf.RoundToInt(-transform.position.y / cellSizeY);
             int colIndex = Mathf.RoundToInt(transform.position.x / cellSizeY);
             int baseOrder = rowIndex * sortingOffset + colIndex;
@@ -76,62 +74,130 @@ namespace Resources.Scripts.Labyrinth
             {
                 SpriteRenderer sr = topBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder; // Верхняя стена – слой 0
+                    sr.sortingOrder = baseOrder;
             }
             if (leftBorder != null)
             {
                 SpriteRenderer sr = leftBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder + 1; // Левая стена – слой 1
+                    sr.sortingOrder = baseOrder + 1;
             }
             if (rightBorder != null)
             {
                 SpriteRenderer sr = rightBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder + 1; // Правая стена – слой 1
+                    sr.sortingOrder = baseOrder + 1;
             }
             if (bottomBorder != null)
             {
                 SpriteRenderer sr = bottomBorder.GetComponent<SpriteRenderer>();
                 if (sr != null)
-                    sr.sortingOrder = baseOrder + 2; // Нижняя стена – слой 2
+                    sr.sortingOrder = baseOrder + 2;
+            }
+            if (leftNoIsoWall != null)
+            {
+                SpriteRenderer sr = leftNoIsoWall.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sortingOrder = baseOrder + 1;
+            }
+            if (rightNoIsoWall != null)
+            {
+                SpriteRenderer sr = rightNoIsoWall.GetComponent<SpriteRenderer>();
+                if (sr != null)
+                    sr.sortingOrder = baseOrder + 1;
             }
         }
 
         /// <summary>
         /// Включает или отключает объект границы в зависимости от флага.
         /// </summary>
-        private void ProcessBorder(GameObject borderObject, bool hasBorder)
+        private void ProcessBorder(GameObject borderObject, bool active)
         {
             if (borderObject != null)
             {
-                borderObject.SetActive(hasBorder);
+                borderObject.SetActive(active);
             }
         }
 
         /// <summary>
         /// Инициализирует ячейку на основе переданных данных.
-        /// Выставляет видимость границ, текстовое значение и теги.
+        /// Дополнительно принимает информацию о позиции ячейки и флаги наличия стен ниже.
         /// </summary>
-        public void Init(LabyrinthCell cell)
+        /// <param name="cell">Данные ячейки</param>
+        /// <param name="row">Номер ряда (начиная с 0 сверху)</param>
+        /// <param name="col">Номер столбца</param>
+        /// <param name="totalCols">Общее число столбцов лабиринта</param>
+        /// <param name="totalRows">Общее число рядов лабиринта</param>
+        /// <param name="belowLeftWall">Есть ли у ячейки ниже левая стена</param>
+        /// <param name="belowRightWall">Есть ли у ячейки ниже правая стена</param>
+        public void Init(LabyrinthCell cell, int row, int col, int totalCols, int totalRows, bool belowLeftWall, bool belowRightWall)
         {
             ProcessBorder(topBorder, cell.TopBorder);
-            ProcessBorder(rightBorder, cell.RightBorder);
             ProcessBorder(bottomBorder, cell.BottomBorder);
-            ProcessBorder(leftBorder, cell.LeftBorder);
 
+            // ЛЕВАЯ СТЕНА
+            if (cell.LeftBorder)
+            {
+                // Если ниже есть такая же стена – используем без изометрии,
+                // иначе (закрывающая стена) – с изометрией.
+                if (row < totalRows - 1 && belowLeftWall)
+                {
+                    if (leftNoIsoWall != null)
+                        leftNoIsoWall.SetActive(true);
+                    if (leftBorder != null)
+                        leftBorder.SetActive(false);
+                }
+                else
+                {
+                    if (leftNoIsoWall != null)
+                        leftNoIsoWall.SetActive(false);
+                    ProcessBorder(leftBorder, true);
+                }
+            }
+            else
+            {
+                if (leftNoIsoWall != null)
+                    leftNoIsoWall.SetActive(false);
+                ProcessBorder(leftBorder, false);
+            }
+
+            // ПРАВАЯ СТЕНА
+            if (cell.RightBorder)
+            {
+                if (row < totalRows - 1 && belowRightWall)
+                {
+                    if (rightNoIsoWall != null)
+                        rightNoIsoWall.SetActive(true);
+                    if (rightBorder != null)
+                        rightBorder.SetActive(false);
+                }
+                else
+                {
+                    if (rightNoIsoWall != null)
+                        rightNoIsoWall.SetActive(false);
+                    ProcessBorder(rightBorder, true);
+                }
+            }
+            else
+            {
+                if (rightNoIsoWall != null)
+                    rightNoIsoWall.SetActive(false);
+                ProcessBorder(rightBorder, false);
+            }
+
+            // Текст и теги для специальных ячеек.
             if (cell.IsStart)
             {
                 arrayValueText.text = "S";
                 arrayValueText.color = new Color(0f, 1f, 0f, defaultTextAlpha);
-                gameObject.tag = "Start"; // Убедитесь, что тег "Start" добавлен в проект.
+                gameObject.tag = "Start";
             }
             else if (cell.IsFinish)
             {
                 arrayValueText.text = "F";
                 arrayValueText.color = new Color(1f, 0f, 0f, defaultTextAlpha);
                 isFinishCell = true;
-                gameObject.tag = "Finish"; // Аналогично, тег "Finish" должен существовать.
+                gameObject.tag = "Finish";
             }
             else if (cell.IsSolutionPath)
             {
@@ -168,11 +234,8 @@ namespace Resources.Scripts.Labyrinth
         /// </summary>
         private void OnTriggerEnter2D(Collider2D other)
         {
-            // Если данная ячейка является финишной и столкновение происходит с объектом игрока.
             if (isFinishCell && other.CompareTag("Player"))
             {
-                // Здесь можно вызвать событие завершения лабиринта.
-                // Пока загружается сцена "Menu". При необходимости замените на нужное имя.
                 UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
             }
         }
