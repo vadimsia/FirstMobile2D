@@ -86,20 +86,31 @@ MonoBehaviour:
   speed: 1
   slowMultiplier: 1
   detectionRange: 5
-  attackRange: 1
+  attackRange: 2
   attackCooldown: 1
   pushPlayer: 0
   pushForceMultiplier: 1
   goblinAttackCooldownTime: 2
   bindingDuration: 2
   projectileSpeed: 5
+  goblinProjectileLifeTime: 5
+  goblinProjectileSpreadAngle: 0
+  goblinProjectileScale: {x: 0.2, y: 0.2, z: 1}
+  goblinProjectileDamage: 0
   projectilePrefab: {fileID: 6885619361130000166, guid: a76844d27e8692f4c8aac78a21f9329b, type: 3}
   attackPoint: {fileID: 6950193387808851861}
+  darkSkullAttackCooldownTime: 1
+  darkSkullPushForce: 5
+  trollAttackCooldownTime: 1
+  trollPushForce: 5
   animator: {fileID: 2288043517369242594}
   idleAnimationName: Idle
   walkAnimationName: Walk
   attackAnimationName: Attack
   spriteRenderer: {fileID: 2619794716273965678}
+  goblinAttackAnimationDuration: 1
+  darkSkullAttackAnimationDuration: 1
+  trollAttackAnimationDuration: 1
   debugLog: 0
 --- !u!114 &634281836380079888
 MonoBehaviour:

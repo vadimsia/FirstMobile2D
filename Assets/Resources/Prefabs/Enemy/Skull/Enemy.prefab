@@ -49,6 +49,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf8b6283cd8ff4f76bcbdfc30dab2a50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enemyName: Scull
+  enemyType: 2
   speed: 1
   slowMultiplier: 1
   detectionRange: 5
@@ -56,11 +58,30 @@ MonoBehaviour:
   attackCooldown: 1
   pushPlayer: 0
   pushForceMultiplier: 1
+  goblinAttackCooldownTime: 2
+  goblinPreAttackDelay: 0.5
+  goblinPostAttackDelay: 0.5
+  bindingDuration: 2
+  projectileSpeed: 5
+  goblinProjectileLifeTime: 5
+  goblinProjectileSpreadAngle: 0
+  goblinProjectileScale: {x: 1, y: 1, z: 1}
+  goblinProjectileDamage: 0
+  projectilePrefab: {fileID: 0}
+  attackPoint: {fileID: 0}
+  darkSkullAttackCooldownTime: 1
+  darkSkullPreAttackDelay: 0.3
+  darkSkullPostAttackDelay: 0.3
+  darkSkullPushForce: 5
+  trollAttackCooldownTime: 1
+  trollPreAttackDelay: 0.3
+  trollPostAttackDelay: 0.3
+  trollPushForce: 5
   animator: {fileID: 720450688526437784}
   idleAnimationName: Idle
   walkAnimationName: Walk
+  attackAnimationName: Attack
   spriteRenderer: {fileID: 7680685347232732074}
-  enemyName: Scull
   debugLog: 0
 --- !u!114 &1847258255522103315
 MonoBehaviour:

@@ -42,6 +42,11 @@ namespace Resources.Scripts.Player
         [SerializeField, Tooltip("Animator component for controlling player animations.")]
         private Animator animator;
 
+        [Header("DarkSkull / Troll Damage Settings")]
+        [Tooltip("Максимальное число ударов от DarkSkull, после которых игрок умирает.")]
+        [SerializeField]
+        private int maxDarkSkullHits = 2;
+
         // Private variables for managing player state.
         private PlayerStatsHandler playerStats;
         private SpriteRenderer spriteRenderer;
@@ -49,6 +54,7 @@ namespace Resources.Scripts.Player
         private Coroutine slowCoroutine;
         private bool bonusActive;
         private float initialDistance = -1f; // Initial distance from player to finish.
+        private int darkSkullHitCount = 0;
 
         private void Start()
         {
@@ -242,7 +248,7 @@ namespace Resources.Scripts.Player
         
         /// <summary>
         /// Applies a binding effect to the player, temporarily disabling movement.
-        /// Это используется, например, при попадании снаряда гоблина.
+        /// Used, for example, when hit by a Goblin projectile.
         /// </summary>
         /// <param name="duration">Duration of the binding effect in seconds.</param>
         public void ApplyBinding(float duration)
@@ -252,13 +258,35 @@ namespace Resources.Scripts.Player
 
         private IEnumerator BindingCoroutine(float duration)
         {
-            // Сохраняем текущий коэффициент замедления, затем блокируем движение.
             float originalSlowMultiplier = currentSlowMultiplier;
             currentSlowMultiplier = 0f;
-            Debug.Log("Игрок связан на " + duration + " секунд.");
+            Debug.Log("Player bound for " + duration + " seconds.");
             yield return new WaitForSeconds(duration);
             currentSlowMultiplier = originalSlowMultiplier;
-            Debug.Log("Игрок разблокирован.");
+            Debug.Log("Player unbound.");
+        }
+
+        /// <summary>
+        /// Increments the count of hits received from DarkSkull enemies.
+        /// After reaching the maximum allowed hits, the player dies.
+        /// </summary>
+        public void ReceiveDarkSkullHit()
+        {
+            darkSkullHitCount++;
+            Debug.Log("Received DarkSkull hit. Count: " + darkSkullHitCount);
+            if (darkSkullHitCount >= maxDarkSkullHits)
+            {
+                Die();
+            }
+        }
+
+        /// <summary>
+        /// Instantly kills the player when hit by a Troll.
+        /// </summary>
+        public void ReceiveTrollHit()
+        {
+            Debug.Log("Received Troll hit. Player dies immediately.");
+            Die();
         }
     }
 }

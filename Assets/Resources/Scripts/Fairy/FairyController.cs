@@ -31,7 +31,7 @@ namespace Resources.Scripts.Fairy
 
         private void Awake()
         {
-            // Получаем компонент SpriteRenderer для управления отображением спрайта
+            // Получаем компонент SpriteRenderer для управления отображением спрайта.
             spriteRenderer = GetComponent<SpriteRenderer>();
             if(spriteRenderer == null)
             {
@@ -54,7 +54,7 @@ namespace Resources.Scripts.Fairy
         /// </summary>
         private void UpdateTargetPosition()
         {
-            // Calculate a random offset within a unit circle and scale it with random multipliers and maxMoveRadius.
+            // Вычисляем случайное смещение в пределах единичного круга и масштабируем его с учетом случайных коэффициентов и maxMoveRadius.
             Vector3 randomOffset = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f);
             float multiplier = Random.Range(minOffsetMultiplier, maxOffsetMultiplier);
             targetPosition = startPosition + randomOffset * multiplier * maxMoveRadius;
@@ -67,21 +67,21 @@ namespace Resources.Scripts.Fairy
 
         private void Update()
         {
-            // If the fairy is close enough to the target, update the target position.
+            // Если фея достаточно близко к цели, обновляем targetPosition.
             if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
             {
                 UpdateTargetPosition();
             }
 
-            // Smoothly move the fairy towards the target position.
-            Vector3 newPosition = Vector3.Lerp(transform.position, targetPosition, speed * Time.deltaTime);
+            // Плавно перемещаем фею к новой позиции с использованием moveSmoothing.
+            Vector3 newPosition = Vector3.Lerp(transform.position, targetPosition, moveSmoothing * speed * Time.deltaTime);
             Vector3 moveDirection = newPosition - transform.position;
             transform.position = newPosition;
 
-            // Обновляем направление спрайта: если движение вправо, переворачиваем спрайт
+            // Обновляем направление спрайта: если движение вправо, переворачиваем спрайт.
             if (spriteRenderer != null && moveDirection.x != 0)
             {
-                // По умолчанию спрайт смотрит влево (flipX == false)
+                // По умолчанию спрайт смотрит влево (flipX == false).
                 spriteRenderer.flipX = moveDirection.x > 0;
             }
         }
