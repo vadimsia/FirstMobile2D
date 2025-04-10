@@ -6,102 +6,115 @@ namespace Resources.Scripts.Enemy
 {
     public enum EnemyType
     {
-        Standard,   // базовая атака (например, удар при контакте)
-        Goblin,     // атака снарядом – попадание определяется столкновением снаряда
-        DarkSkull,  // удар, попадание регистрируется через Animation Event
-        Troll       // удар, попадание регистрируется через Animation Event
+        Standard,
+        Goblin,
+        DarkSkull,
+        Troll
     }
 
     public class EnemyController : MonoBehaviour
     {
+        #region Inspector Fields
         [Header("Common Settings")]
-        [Tooltip("Имя врага (для отладки).")]
+        [Tooltip("Имя врага для отладки и логирования.")]
         public string enemyName = "Enemy";
-        [Tooltip("Тип врага.")]
         public EnemyType enemyType = EnemyType.Standard;
 
         [Header("Movement Settings")]
-        [Tooltip("Базовая скорость перемещения врага.")]
-        public int speed = 1;
-        [Tooltip("Множитель для замедления врага.")]
+        [Tooltip("Базовая скорость передвижения врага.")]
+        public float speed = 1f;
+        [Tooltip("Множитель замедления (при наложении эффекта).")]
         public float slowMultiplier = 1f;
-        [Tooltip("Максимальное расстояние для обнаружения игрока.")]
+        [Tooltip("Дальность обнаружения игрока.")]
         public float detectionRange = 5f;
-        [Tooltip("Расстояние, на котором враг начинает атаку.")]
+        [Tooltip("Дальность атаки.")]
         public float attackRange = 1f;
 
+        [Header("Patrol Settings")]
+        [Tooltip("Радиус патрулирования относительно точки спавна.")]
+        public float patrolRadius = 3f;
+        [Tooltip("Множитель скорости патрулирования.")]
+        public float patrolSpeedMultiplier = 0.5f;
+
         [Header("Standard Attack Settings")]
-        [Tooltip("Интервал между атаками (сек) для стандартного типа.")]
+        [Tooltip("Время между ударами стандартного врага.")]
         public float attackCooldown = 1f;
-        [Tooltip("Включить отталкивание игрока при контакте.")]
+        [Tooltip("Нужно ли отталкивать игрока при атаке.")]
         public bool pushPlayer = true;
         [Tooltip("Сила отталкивания игрока.")]
         public float pushForceMultiplier = 1f;
 
         [Header("Goblin Attack Settings")]
-        [Tooltip("Длительность кулдауна между атаками гоблина.")]
+        [Tooltip("Время между выстрелами гоблина.")]
         public float goblinAttackCooldownTime = 2f;
-        [Tooltip("Длительность привязки снаряда (сек).")]
+        [Tooltip("Длительность эффекта связывания при попадании снаряда.")]
         public float bindingDuration = 0.5f;
-        [Tooltip("Скорость полёта снаряда гоблина.")]
+        [Tooltip("Скорость полёта снаряда.")]
         public float projectileSpeed = 5f;
-        [Tooltip("Время жизни снаряда (сек).")]
+        [Tooltip("Время жизни снаряда.")]
         public float goblinProjectileLifeTime = 5f;
-        [Tooltip("Угол случайного разброса направления снаряда (в градусах).")]
+        [Tooltip("Угол разброса снаряда.")]
         public float goblinProjectileSpreadAngle = 0f;
-        [Tooltip("Масштаб (размер) снаряда.")]
+        [Tooltip("Масштаб снаряда.")]
         public Vector3 goblinProjectileScale = Vector3.one;
-        [Tooltip("Урон снаряда (если применяется, 0 – не наносит дополнительного урона).")]
+        [Tooltip("Урон снаряда гоблина.")]
         public float goblinProjectileDamage = 0f;
-        [Tooltip("Префаб снаряда для гоблина (должен содержать компонент GoblinProjectile, SpriteRenderer и Collider2D с isTrigger = true).")]
+        [Tooltip("Префаб снаряда гоблина.")]
         public GameObject projectilePrefab;
-        [Tooltip("Точка, из которой появляется снаряд гоблина.")]
+        [Tooltip("Точка, из которой происходит атака (выстрел).")]
         public Transform attackPoint;
 
         [Header("DarkSkull Attack Settings")]
-        [Tooltip("Длительность кулдауна между ударами DarkSkull.")]
+        [Tooltip("Время между ударами DarkSkull.")]
         public float darkSkullAttackCooldownTime = 1f;
-        [Tooltip("Сила отталкивания игрока ударом DarkSkull.")]
+        [Tooltip("Сила отталкивания игрока при атаке DarkSkull.")]
         public float darkSkullPushForce = 5f;
+        [Tooltip("Длительность анимации атаки DarkSkull.")]
+        public float darkSkullAttackAnimationDuration = 1f;
 
         [Header("Troll Attack Settings")]
-        [Tooltip("Длительность кулдауна между ударами Troll.")]
+        [Tooltip("Время между ударами Troll.")]
         public float trollAttackCooldownTime = 1f;
-        [Tooltip("Сила отталкивания игрока ударом Troll.")]
+        [Tooltip("Сила отталкивания игрока при атаке Troll.")]
         public float trollPushForce = 5f;
+        [Tooltip("Длительность анимации атаки Troll.")]
+        public float trollAttackAnimationDuration = 1f;
 
         [Header("Animation Settings")]
-        [Tooltip("Компонент Animator, отвечающий за анимацию врага.")]
         public Animator animator;
-        [Tooltip("Название анимации для состояния Idle.")]
+        [Tooltip("Имя анимации состояния ожидания.")]
         public string idleAnimationName = "Idle";
-        [Tooltip("Название анимации для состояния Walk.")]
+        [Tooltip("Имя анимации бега (идентично при патрулировании или преследовании).")]
         public string walkAnimationName = "Walk";
-        [Tooltip("Название анимации для атаки.")]
+        [Tooltip("Имя анимации атаки.")]
         public string attackAnimationName = "Attack";
-        [Tooltip("Компонент SpriteRenderer для управления направлением спрайта.")]
         public SpriteRenderer spriteRenderer;
 
         [Header("Animation Durations")]
-        [Tooltip("Длительность анимации атаки гоблина (сек).")]
+        [Tooltip("Длительность анимации атаки гоблина.")]
         public float goblinAttackAnimationDuration = 1f;
-        [Tooltip("Длительность анимации удара DarkSkull (сек).")]
-        public float darkSkullAttackAnimationDuration = 1f;
-        [Tooltip("Длительность анимации удара Troll (сек).")]
-        public float trollAttackAnimationDuration = 1f;
 
         [Header("Debug Settings")]
-        [Tooltip("Включить вывод отладочной информации в консоль.")]
         public bool debugLog;
+        #endregion
 
+        #region Private Fields
         private float currentSpeed;
         private Rigidbody2D rb;
         private PlayerController player;
         private bool isAttacking;
         private float lastAttackTime;
+        private Vector3 spawnPoint;
+        private Vector3 patrolTarget;
+        #endregion
 
+        #region Unity Methods
         private void Start()
         {
+            spawnPoint = transform.position;
+    
+            
+    
             player = GameObject.FindWithTag("Player")?.GetComponent<PlayerController>();
             currentSpeed = speed;
             rb = GetComponent<Rigidbody2D>();
@@ -109,184 +122,229 @@ namespace Resources.Scripts.Enemy
             if (spriteRenderer == null)
                 spriteRenderer = GetComponent<SpriteRenderer>();
 
-            // По умолчанию враг может находиться в состоянии ожидания (Idle)
             if (animator != null)
                 animator.Play(idleAnimationName);
+
+            patrolTarget = GetRandomPatrolPoint();
         }
+
 
         private void Update()
         {
+            // Если игрок не найден, враг патрулирует
             if (player == null)
             {
-                Destroy(gameObject);
+                Patrol();
                 return;
             }
 
             float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
 
-            // Если игрок вне зоны обнаружения – враг преследует игрока.
-            if (distanceToPlayer > detectionRange)
+            // Если враг может атаковать (находится в зоне атаки) – не приближается далее
+            if (distanceToPlayer <= attackRange)
             {
-                isAttacking = false;
-                MoveTowardsPlayer();
-                return;
+                AttackPlayer();
             }
+            else if (distanceToPlayer <= detectionRange)
+            {
+                ChasePlayer();
+            }
+            else
+            {
+                Patrol();
+            }
+        }
+        #endregion
 
-            // Выбор логики атаки в зависимости от типа врага.
+        #region Movement Methods
+        /// <summary>
+        /// Выполняет плавное преследование игрока.
+        /// </summary>
+        private void ChasePlayer()
+        {
+            if (!isAttacking)
+            {
+                if (animator != null && !animator.GetCurrentAnimatorStateInfo(0).IsName(walkAnimationName))
+                    animator.Play(walkAnimationName);
+            }
+            
+            TurnToTarget(player.transform.position);
+            transform.position = Vector3.MoveTowards(transform.position, player.transform.position, speed * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Выполняет патрулирование вокруг точки спавна.
+        /// </summary>
+        private void Patrol()
+        {
+            if (!isAttacking)
+            {
+                if (animator != null && !animator.GetCurrentAnimatorStateInfo(0).IsName(walkAnimationName))
+                    animator.Play(walkAnimationName);
+            }
+            
+            TurnToTarget(patrolTarget);
+            float patrolSpeed = speed * patrolSpeedMultiplier;
+            transform.position = Vector3.MoveTowards(transform.position, patrolTarget, patrolSpeed * Time.deltaTime);
+
+            // Если достигнута цель патрулирования – выбираем новую
+            if (Vector3.Distance(transform.position, patrolTarget) < 0.1f)
+            {
+                patrolTarget = GetRandomPatrolPoint();
+            }
+        }
+
+        /// <summary>
+        /// Поворачивает врага в сторону указанной цели.
+        /// </summary>
+        private void TurnToTarget(Vector3 targetPosition)
+        {
+            float deltaX = targetPosition.x - transform.position.x;
+            transform.eulerAngles = (deltaX < 0) ? new Vector3(0, 0, 0) : new Vector3(0, 180, 0);
+        }
+
+        /// <summary>
+        /// Возвращает случайную точку для патрулирования вокруг точки спавна.
+        /// </summary>
+        private Vector3 GetRandomPatrolPoint()
+        {
+            Vector2 randomPoint = Random.insideUnitCircle * patrolRadius;
+            return spawnPoint + new Vector3(randomPoint.x, randomPoint.y, 0);
+        }
+        #endregion
+
+        #region Attack Methods
+        /// <summary>
+        /// Выбирает тип атаки врага в зависимости от его типа.
+        /// </summary>
+        private void AttackPlayer()
+        {
+            if (isAttacking) return;
+            float timeSinceLastAttack = Time.time - lastAttackTime;
+
             switch (enemyType)
             {
                 case EnemyType.Goblin:
-                    if (distanceToPlayer <= attackRange)
-                    {
-                        if (!isAttacking && Time.time - lastAttackTime >= goblinAttackCooldownTime)
-                            StartCoroutine(PerformGoblinAttack());
-                    }
-                    else
-                    {
-                        isAttacking = false;
-                        MoveTowardsPlayer();
-                    }
+                    if (timeSinceLastAttack >= goblinAttackCooldownTime)
+                        StartCoroutine(PerformGoblinAttack());
                     break;
-
                 case EnemyType.DarkSkull:
-                    if (distanceToPlayer <= attackRange)
-                    {
-                        if (!isAttacking && Time.time - lastAttackTime >= darkSkullAttackCooldownTime)
-                            StartCoroutine(PerformDarkSkullAttack());
-                    }
-                    else
-                    {
-                        isAttacking = false;
-                        MoveTowardsPlayer();
-                    }
+                    if (timeSinceLastAttack >= darkSkullAttackCooldownTime)
+                        StartCoroutine(PerformDarkSkullAttack());
                     break;
-
                 case EnemyType.Troll:
-                    if (distanceToPlayer <= attackRange)
-                    {
-                        if (!isAttacking && Time.time - lastAttackTime >= trollAttackCooldownTime)
-                            StartCoroutine(PerformTrollAttack());
-                    }
-                    else
-                    {
-                        isAttacking = false;
-                        MoveTowardsPlayer();
-                    }
+                    if (timeSinceLastAttack >= trollAttackCooldownTime)
+                        StartCoroutine(PerformTrollAttack());
                     break;
-
                 case EnemyType.Standard:
                 default:
-                    if (distanceToPlayer <= attackRange)
-                    {
-                        if (Time.time - lastAttackTime >= attackCooldown)
-                        {
-                            lastAttackTime = Time.time;
-                            player.TakeDamage(this);
-                            if (debugLog)
-                                Debug.Log(enemyName + " атаковал игрока.");
-                            if (pushPlayer && player.TryGetComponent<Rigidbody2D>(out Rigidbody2D playerRb))
-                            {
-                                Vector2 pushDirection = (player.transform.position - transform.position).normalized;
-                                playerRb.AddForce(pushDirection * pushForceMultiplier, ForceMode2D.Impulse);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        MoveTowardsPlayer();
-                    }
+                    if (timeSinceLastAttack >= attackCooldown)
+                        StartCoroutine(PerformStandardAttack());
                     break;
             }
         }
 
         /// <summary>
-        /// Перемещает врага к игроку с плавным движением и проигрыванием анимации ходьбы.
+        /// Выполняет стандартную атаку (ближний бой).
         /// </summary>
-        private void MoveTowardsPlayer()
+        private IEnumerator PerformStandardAttack()
         {
-            // При движении проигрываем анимацию ходьбы
+            isAttacking = true;
+            lastAttackTime = Time.time;
+            float originalSpeed = speed;
+            speed = 0f;
+
             if (animator != null)
-                animator.Play(walkAnimationName);
+                animator.Play(attackAnimationName);
 
-            transform.position = Vector3.Lerp(transform.position, player.transform.position, Time.deltaTime * currentSpeed);
+            yield return new WaitForSeconds(attackCooldown);
 
-            if (spriteRenderer != null)
+            // Наносим урон игроку
+            player.TakeDamage(this);
+            if (debugLog)
+                Debug.Log($"{enemyName} атаковал игрока стандартным ударом.");
+
+            if (pushPlayer && player.TryGetComponent<Rigidbody2D>(out Rigidbody2D playerRb))
             {
-                float direction = player.transform.position.x - transform.position.x;
-                spriteRenderer.flipX = direction > 0;
+                Vector2 pushDirection = (player.transform.position - transform.position).normalized;
+                playerRb.AddForce(pushDirection * pushForceMultiplier, ForceMode2D.Impulse);
             }
+
+            speed = originalSpeed;
+            isAttacking = false;
+            UpdateAnimationState(); // Обновляем анимацию после атаки
         }
 
         /// <summary>
-        /// Выполняет атаку гоблина: проигрывается анимация атаки (Attack),
-        /// после чего через Animation Event вызывается SpawnProjectileEvent, который создаст снаряд.
-        /// После окончания анимации движение врага восстанавливается.
+        /// Выполняет атаку гоблина с выстрелом снаряда.
         /// </summary>
         private IEnumerator PerformGoblinAttack()
         {
             isAttacking = true;
             lastAttackTime = Time.time;
-            float originalSpeed = currentSpeed;
-            currentSpeed = 0;
+            float originalSpeed = speed;
+            speed = 0f;
 
             if (animator != null)
                 animator.Play(attackAnimationName);
 
-            // Ожидаем время анимации атаки гоблина, в этот момент должен сработать Animation Event,
-            // который вызовет метод SpawnProjectileEvent.
             yield return new WaitForSeconds(goblinAttackAnimationDuration);
 
-            currentSpeed = originalSpeed;
+            SpawnProjectileEvent();
+
+            speed = originalSpeed;
             isAttacking = false;
+            UpdateAnimationState(); // Обновляем анимацию
         }
 
         /// <summary>
-        /// Выполняет атаку DarkSkull: проигрывается анимация атаки,
-        /// а в нужный момент (через Animation Event) вызывается RegisterDarkSkullHitEvent.
-        /// После окончания анимации движение врага восстанавливается.
+        /// Выполняет атаку DarkSkull (удар с отталкиванием).
         /// </summary>
         private IEnumerator PerformDarkSkullAttack()
         {
             isAttacking = true;
             lastAttackTime = Time.time;
-            float originalSpeed = currentSpeed;
-            currentSpeed = 0;
+            float originalSpeed = speed;
+            speed = 0f;
 
             if (animator != null)
                 animator.Play(attackAnimationName);
 
             yield return new WaitForSeconds(darkSkullAttackAnimationDuration);
 
-            currentSpeed = originalSpeed;
+            RegisterDarkSkullHitEvent();
+
+            speed = originalSpeed;
             isAttacking = false;
+            UpdateAnimationState();
         }
 
         /// <summary>
-        /// Выполняет атаку Troll: проигрывается анимация атаки,
-        /// а в нужный момент (через Animation Event) вызывается RegisterTrollHitEvent.
-        /// После окончания анимации движение врага восстанавливается.
+        /// Выполняет атаку Troll (удар с отталкиванием).
         /// </summary>
         private IEnumerator PerformTrollAttack()
         {
             isAttacking = true;
             lastAttackTime = Time.time;
-            float originalSpeed = currentSpeed;
-            currentSpeed = 0;
+            float originalSpeed = speed;
+            speed = 0f;
 
             if (animator != null)
                 animator.Play(attackAnimationName);
 
             yield return new WaitForSeconds(trollAttackAnimationDuration);
 
-            currentSpeed = originalSpeed;
+            RegisterTrollHitEvent();
+
+            speed = originalSpeed;
             isAttacking = false;
+            UpdateAnimationState();
         }
+        #endregion
 
         #region Animation Event Methods
-
         /// <summary>
-        /// Метод для создания снаряда гоблина, вызываемый через Animation Event в клипе атаки.
-        /// Снаряд создаётся и получает все необходимые параметры.
+        /// Метод вызывается для создания снаряда у гоблина.
         /// </summary>
         public void SpawnProjectileEvent()
         {
@@ -315,63 +373,103 @@ namespace Resources.Scripts.Enemy
             }
             else
             {
-                Debug.LogWarning("Префаб снаряда не назначен для " + enemyName);
+                Debug.LogWarning($"Префаб снаряда не назначен для {enemyName}");
             }
         }
 
         /// <summary>
-        /// Метод, вызываемый через Animation Event для атаки DarkSkull.
-        /// Регистрирует попадание и отталкивание игрока.
+        /// Метод для регистрации попадания DarkSkull.
         /// </summary>
         public void RegisterDarkSkullHitEvent()
         {
-            player.ReceiveDarkSkullHit();
-            if (pushPlayer && player.TryGetComponent<Rigidbody2D>(out Rigidbody2D playerRb))
+            if (player != null)
             {
-                Vector2 pushDirection = (player.transform.position - transform.position).normalized;
-                playerRb.AddForce(pushDirection * darkSkullPushForce, ForceMode2D.Impulse);
+                player.ReceiveDarkSkullHit();
+                if (pushPlayer && player.TryGetComponent<Rigidbody2D>(out Rigidbody2D playerRb))
+                {
+                    Vector2 pushDirection = (player.transform.position - transform.position).normalized;
+                    playerRb.AddForce(pushDirection * darkSkullPushForce, ForceMode2D.Impulse);
+                }
             }
         }
 
         /// <summary>
-        /// Метод, вызываемый через Animation Event для атаки Troll.
-        /// Регистрирует попадание и отталкивание игрока.
+        /// Метод для регистрации попадания Troll.
         /// </summary>
         public void RegisterTrollHitEvent()
         {
-            player.ReceiveTrollHit();
-            if (pushPlayer && player.TryGetComponent<Rigidbody2D>(out Rigidbody2D playerRb))
+            if (player != null)
             {
-                Vector2 pushDirection = (player.transform.position - transform.position).normalized;
-                playerRb.AddForce(pushDirection * trollPushForce, ForceMode2D.Impulse);
+                player.ReceiveTrollHit();
+                if (pushPlayer && player.TryGetComponent<Rigidbody2D>(out Rigidbody2D playerRb))
+                {
+                    Vector2 pushDirection = (player.transform.position - transform.position).normalized;
+                    playerRb.AddForce(pushDirection * trollPushForce, ForceMode2D.Impulse);
+                }
             }
         }
-
         #endregion
 
+        #region Effects
         /// <summary>
-        /// Применяет эффект замедления к врагу на заданное время.
+        /// Внешний вызов для применения эффекта замедления.
         /// </summary>
         public void ApplySlow(float slowFactor, float duration)
         {
             StartCoroutine(SlowEffect(slowFactor, duration));
         }
 
+        /// <summary>
+        /// Корутина, реализующая эффект замедления.
+        /// </summary>
         private IEnumerator SlowEffect(float slowFactor, float duration)
         {
-            float originalSpeed = currentSpeed;
-            currentSpeed = speed * slowFactor;
+            float originalSpeed = speed;
+            speed = originalSpeed * slowFactor;
             yield return new WaitForSeconds(duration);
-            currentSpeed = originalSpeed;
+            speed = originalSpeed;
         }
 
         /// <summary>
-        /// Применяет импульс к врагу.
+        /// Внешний вызов для применения отталкивания.
         /// </summary>
         public void ApplyPush(Vector2 force)
         {
             if (rb != null)
                 rb.AddForce(force, ForceMode2D.Impulse);
         }
+        #endregion
+
+        #region Animation State Update
+        /// <summary>
+        /// Обновляет состояние анимации в зависимости от текущего поведения.
+        /// Если враг не атакует, выбирается анимация Walk, если движется, или Idle, если стоит.
+        /// </summary>
+        private void UpdateAnimationState()
+        {
+            if (player != null)
+            {
+                float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
+                // Если игрок в зоне обнаружения – проверяем, движемся ли мы (Chase) или уже в зоне атаки
+                if (distanceToPlayer <= detectionRange)
+                {
+                    // Если враг находится в зоне атаки, можно переключить в Idle (например, если атака завершилась)
+                    if (distanceToPlayer <= attackRange)
+                        animator.Play(idleAnimationName);
+                    else
+                        animator.Play(walkAnimationName);
+                }
+                else
+                {
+                    animator.Play(idleAnimationName);
+                }
+            }
+            else
+            {
+                // Если игрок не найден – используем анимацию патрулирования (Walk)
+                animator.Play(walkAnimationName);
+            }
+        }
+        #endregion
     }
 }
