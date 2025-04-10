@@ -53,8 +53,8 @@ MonoBehaviour:
   enemyType: 3
   speed: 1
   slowMultiplier: 1
-  detectionRange: 5
-  attackRange: 1
+  detectionRange: 2
+  attackRange: 0.5
   attackCooldown: 1
   pushPlayer: 0
   pushForceMultiplier: 1
@@ -69,16 +69,16 @@ MonoBehaviour:
   attackPoint: {fileID: 0}
   darkSkullAttackCooldownTime: 1
   darkSkullPushForce: 5
-  trollAttackCooldownTime: 1
+  darkSkullAttackAnimationDuration: 1
+  trollAttackCooldownTime: 2
   trollPushForce: 5
+  trollAttackAnimationDuration: 2
   animator: {fileID: 5353940982376962504}
   idleAnimationName: Idle
   walkAnimationName: Walk
   attackAnimationName: Attack
   spriteRenderer: {fileID: 683334096228550543}
   goblinAttackAnimationDuration: 1
-  darkSkullAttackAnimationDuration: 1
-  trollAttackAnimationDuration: 1
   debugLog: 0
 --- !u!114 &1120508908474186410
 MonoBehaviour:
@@ -140,7 +140,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 2
-  m_Sprite: {fileID: 21300000, guid: 6072daaf0c57ec04b89d4100b357cd4e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 91d1e798d0f2d6f449414d73c8112ffb, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

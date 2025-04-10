@@ -14,6 +14,15 @@ namespace Resources.Scripts.Player
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
+        #region Constants
+
+        private const string IdleAnimationName = "Idle";
+        private const string RunAnimationName = "Run";
+
+        #endregion
+
+        #region Inspector Fields
+
         [Header("Movement Settings")]
         [SerializeField, Range(1, 10), Tooltip("Movement speed when using keyboard input.")]
         private float keyboardSpeed = 3f;
@@ -47,39 +56,118 @@ namespace Resources.Scripts.Player
         [SerializeField]
         private int maxDarkSkullHits = 2;
 
-        // Private variables for managing player state.
+        #endregion
+
+        #region Private Fields
+
         private PlayerStatsHandler playerStats;
         private SpriteRenderer spriteRenderer;
         private float currentSlowMultiplier = 1f;
         private Coroutine slowCoroutine;
         private bool bonusActive;
-        private float initialDistance = -1f; // Initial distance from player to finish.
+        private float initialDistance = -1f; // Изначальное расстояние от игрока до финиша.
         private int darkSkullHitCount = 0;
+
+        #endregion
+
+        #region Unity Methods
 
         private void Start()
         {
             playerStats = GetComponent<PlayerStatsHandler>();
             spriteRenderer = GetComponent<SpriteRenderer>();
 
-            // If finishPoint is not assigned, wait for the finish marker to appear.
-            if (finishPoint == null)
-            {
-                StartCoroutine(WaitForFinishMarker());
-            }
-            else
+            if (finishPoint != null)
             {
                 initialDistance = Vector2.Distance(transform.position, finishPoint.position);
             }
+            else
+            {
+                StartCoroutine(WaitForFinishMarker());
+            }
         }
 
+        private void Update()
+        {
+            UpdateMovement();
+            UpdateLightOuterRange();
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            // При столкновении с феей – уничтожаем её и восстанавливаем ману.
+            if (other.CompareTag(ETag.Fairy.ToString()))
+            {
+                FairyController fairy = other.GetComponent<FairyController>();
+                fairy?.DestroyFairy();
+                playerStats.RestoreMana(20f);
+            }
+        }
+
+        #endregion
+
+        #region Movement Methods
+
         /// <summary>
-        /// Coroutine that waits until the finish marker appears in the scene.
+        /// Обновляет перемещение игрока на основе входных данных.
+        /// Движение не выполняется, если активна карта лабиринта или зажата клавиша Space.
+        /// Также обновляются анимация и переворот спрайта.
+        /// </summary>
+        private void UpdateMovement()
+        {
+            if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive) || Input.GetKey(KeyCode.Space))
+                return;
+
+            float horizontal = (joystick != null) ? joystick.Horizontal : Input.GetAxis("Horizontal");
+            float vertical   = (joystick != null) ? joystick.Vertical   : Input.GetAxis("Vertical");
+            float currentSpeed = ((joystick != null) ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
+            Vector2 movement = new Vector2(horizontal, vertical) * currentSpeed;
+
+            // Перемещаем игрока.
+            transform.Translate(movement * Time.deltaTime, Space.World);
+
+            // Обновляем состояние анимации и переворот спрайта.
+            if (Mathf.Approximately(horizontal, 0f) && Mathf.Approximately(vertical, 0f))
+            {
+                animator.Play(IdleAnimationName);
+            }
+            else
+            {
+                animator.Play(RunAnimationName);
+                spriteRenderer.flipX = horizontal > 0f;
+            }
+        }
+
+        #endregion
+
+        #region Light Methods
+
+        /// <summary>
+        /// Обновляет внешний радиус освещения игрока в зависимости от расстояния до финиша.
+        /// </summary>
+        private void UpdateLightOuterRange()
+        {
+            if (finishPoint != null && playerLight != null && initialDistance > 0)
+            {
+                float currentDistance = Vector2.Distance(transform.position, finishPoint.position);
+                float t = 1f - Mathf.Clamp01(currentDistance / initialDistance);
+                float outerRange = Mathf.Lerp(baseLightRange, maxLightRange, t);
+                playerLight.pointLightOuterRadius = outerRange;
+            }
+        }
+
+        #endregion
+
+        #region Utility Methods
+
+        /// <summary>
+        /// Ожидает появления финишного маркера в сцене.
         /// </summary>
         private IEnumerator WaitForFinishMarker()
         {
             while (finishPoint == null)
             {
-                GameObject finishObj = GameObject.FindGameObjectWithTag(ETag.Fairy.ToString()); // Если finish marker использует другой тег, обновите условие.
+                GameObject finishObj = GameObject.FindGameObjectWithTag(ETag.Fairy.ToString());
                 if (finishObj != null)
                 {
                     finishPoint = finishObj.transform;
@@ -90,61 +178,8 @@ namespace Resources.Scripts.Player
             }
         }
 
-        private void Update()
-        {
-            UpdateMovement();
-            UpdateLightOuterRange();
-        }
-
         /// <summary>
-        /// Updates player movement based on input.
-        /// Movement is disabled if the map is active.
-        /// Also updates animation and sprite flipping based on direction.
-        /// </summary>
-        private void UpdateMovement()
-        {
-            // Do not move if the minimap is active or if Space is held down.
-            if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive) || Input.GetKey(KeyCode.Space))
-                return;
-
-            float horizontal = (joystick != null) ? joystick.Horizontal : Input.GetAxis("Horizontal");
-            float vertical   = (joystick != null) ? joystick.Vertical   : Input.GetAxis("Vertical");
-            float currentSpeed = ((joystick != null) ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
-            Vector2 movement = new Vector2(horizontal, vertical) * currentSpeed;
-
-            // Move the player in world space.
-            transform.Translate(movement * Time.deltaTime, Space.World);
-
-            // Update animation state and sprite flipping.
-            if (Mathf.Approximately(horizontal, 0f) && Mathf.Approximately(vertical, 0f))
-            {
-                animator.Play("Idle");
-            }
-            else
-            {
-                animator.Play("Run");
-                // Flip sprite based on horizontal movement.
-                spriteRenderer.flipX = horizontal > 0f;
-            }
-        }
-
-        /// <summary>
-        /// Adjusts the player's light outer radius based on distance to the finish marker.
-        /// </summary>
-        private void UpdateLightOuterRange()
-        {
-            if (finishPoint != null && playerLight != null && initialDistance > 0)
-            {
-                float currentDistance = Vector2.Distance(transform.position, finishPoint.position);
-                // Calculate a t value from 0 to 1 based on distance.
-                float t = 1f - Mathf.Clamp01(currentDistance / initialDistance);
-                float outerRange = Mathf.Lerp(baseLightRange, maxLightRange, t);
-                playerLight.pointLightOuterRadius = outerRange;
-            }
-        }
-
-        /// <summary>
-        /// Handles player death by disabling all UI canvases and destroying the player object.
+        /// Обрабатывает смерть игрока, отключая все UI и уничтожая объект игрока.
         /// </summary>
         private void Die()
         {
@@ -155,21 +190,14 @@ namespace Resources.Scripts.Player
             Destroy(gameObject);
         }
 
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            // When colliding with a fairy, destroy it and restore mana.
-            if (other.CompareTag(ETag.Fairy.ToString()))
-            {
-                FairyController fairy = other.GetComponent<FairyController>();
-                fairy.DestroyFairy();
-                playerStats.RestoreMana(20f);
-            }
-        }
+        #endregion
+
+        #region Damage and Effects
 
         /// <summary>
-        /// Reduces the player's health based on enemy damage and applies a dash effect if enabled.
+        /// Получает урон от врага и выполняет эффект отталкивания (dash), если активирован.
         /// </summary>
-        /// <param name="enemy">Enemy controller that hit the player.</param>
+        /// <param name="enemy">Контроллер врага, нанесшего урон.</param>
         public void TakeDamage(EnemyController enemy)
         {
             if (isImmortal)
@@ -177,22 +205,83 @@ namespace Resources.Scripts.Player
 
             EnemyStatsHandler enemyStats = enemy.GetComponent<EnemyStatsHandler>();
             playerStats.Health -= enemyStats.Damage;
+
             if (playerStats.Health <= 0)
             {
                 Die();
                 return;
             }
+
             if (enemy.pushPlayer)
             {
-                // Dash away from the enemy.
+                // Отталкиваем игрока от врага.
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
             }
         }
 
         /// <summary>
-        /// Temporarily increases the player's movement speed by a multiplier for a set duration.
+        /// Применяет эффект замедления движения игрока на заданное время.
         /// </summary>
-        /// <param name="multiplier">Speed multiplier to apply.</param>
+        /// <param name="slowFactor">Множитель замедления.</param>
+        /// <param name="duration">Длительность эффекта.</param>
+        public void ApplySlow(float slowFactor, float duration)
+        {
+            if (slowCoroutine != null)
+                StopCoroutine(slowCoroutine);
+            slowCoroutine = StartCoroutine(SlowEffectCoroutine(slowFactor, duration));
+        }
+
+        private IEnumerator SlowEffectCoroutine(float slowFactor, float duration)
+        {
+            currentSlowMultiplier = slowFactor;
+            yield return new WaitForSeconds(duration);
+            currentSlowMultiplier = 1f;
+        }
+
+        /// <summary>
+        /// Применяет эффект связывания (binding), который блокирует движение игрока на заданное время.
+        /// Используется, например, при попадании снаряда гоблина.
+        /// </summary>
+        /// <param name="duration">Длительность связывания в секундах.</param>
+        public void ApplyBinding(float duration)
+        {
+            StartCoroutine(BindingCoroutine(duration));
+        }
+
+        private IEnumerator BindingCoroutine(float duration)
+        {
+            float originalMultiplier = currentSlowMultiplier;
+            currentSlowMultiplier = 0f;
+            Debug.Log("Player bound for " + duration + " seconds.");
+            yield return new WaitForSeconds(duration);
+            currentSlowMultiplier = originalMultiplier;
+            Debug.Log("Player unbound.");
+        }
+
+        /// <summary>
+        /// Оглушает игрока на заданное время, полностью блокируя его движение.
+        /// Например, при попадании в ловушку.
+        /// </summary>
+        /// <param name="duration">Длительность оглушения в секундах.</param>
+        public void Stun(float duration)
+        {
+            StartCoroutine(StunCoroutine(duration));
+        }
+
+        private IEnumerator StunCoroutine(float duration)
+        {
+            float originalMultiplier = currentSlowMultiplier;
+            currentSlowMultiplier = 0f;
+            Debug.Log("Player stunned for " + duration + " seconds.");
+            yield return new WaitForSeconds(duration);
+            currentSlowMultiplier = originalMultiplier;
+            Debug.Log("Player stun ended.");
+        }
+
+        /// <summary>
+        /// Увеличивает скорость игрока на заданное время.
+        /// </summary>
+        /// <param name="multiplier">Множитель скорости.</param>
         public void IncreaseSpeed(float multiplier)
         {
             if (bonusActive)
@@ -211,64 +300,8 @@ namespace Resources.Scripts.Player
         }
 
         /// <summary>
-        /// Stuns the player for the specified duration.
-        /// </summary>
-        /// <param name="duration">Duration of the stun effect.</param>
-        public void Stun(float duration)
-        {
-            StartCoroutine(StunCoroutine(duration));
-        }
-
-        private IEnumerator StunCoroutine(float duration)
-        {
-            float originalSlowMultiplier = currentSlowMultiplier;
-            currentSlowMultiplier = 0f;
-            yield return new WaitForSeconds(duration);
-            currentSlowMultiplier = originalSlowMultiplier;
-        }
-
-        /// <summary>
-        /// Applies a slow effect to the player's movement for a specified duration.
-        /// </summary>
-        /// <param name="slowFactor">Factor by which movement speed is reduced.</param>
-        /// <param name="duration">Duration of the slow effect.</param>
-        public void ApplySlow(float slowFactor, float duration)
-        {
-            if (slowCoroutine != null)
-                StopCoroutine(slowCoroutine);
-            slowCoroutine = StartCoroutine(SlowEffectCoroutine(slowFactor, duration));
-        }
-
-        private IEnumerator SlowEffectCoroutine(float slowFactor, float duration)
-        {
-            currentSlowMultiplier = slowFactor;
-            yield return new WaitForSeconds(duration);
-            currentSlowMultiplier = 1f;
-        }
-        
-        /// <summary>
-        /// Applies a binding effect to the player, temporarily disabling movement.
-        /// Used, for example, when hit by a Goblin projectile.
-        /// </summary>
-        /// <param name="duration">Duration of the binding effect in seconds.</param>
-        public void ApplyBinding(float duration)
-        {
-            StartCoroutine(BindingCoroutine(duration));
-        }
-
-        private IEnumerator BindingCoroutine(float duration)
-        {
-            float originalSlowMultiplier = currentSlowMultiplier;
-            currentSlowMultiplier = 0f;
-            Debug.Log("Player bound for " + duration + " seconds.");
-            yield return new WaitForSeconds(duration);
-            currentSlowMultiplier = originalSlowMultiplier;
-            Debug.Log("Player unbound.");
-        }
-
-        /// <summary>
-        /// Increments the count of hits received from DarkSkull enemies.
-        /// After reaching the maximum allowed hits, the player dies.
+        /// Регистрирует попадание от врагов типа DarkSkull.
+        /// После достижения предельного количества ударов игрок умирает.
         /// </summary>
         public void ReceiveDarkSkullHit()
         {
@@ -281,12 +314,14 @@ namespace Resources.Scripts.Player
         }
 
         /// <summary>
-        /// Instantly kills the player when hit by a Troll.
+        /// Мгновенно убивает игрока при попадании от врагов типа Troll.
         /// </summary>
         public void ReceiveTrollHit()
         {
             Debug.Log("Received Troll hit. Player dies immediately.");
             Die();
         }
+
+        #endregion
     }
 }
