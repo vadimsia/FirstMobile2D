@@ -13716,9 +13716,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 0}
   spawnInterval: 5
-  maxEnemies: 10
+  maxEnemies: 5
   spawnRadius: 10
   randomizeSpawnPosition: 1
+  minDistanceFromPlayer: 5
+  minDistanceBetweenEnemies: 2
+  maxSpawnAttempts: 10
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
   debugLog: 0
 --- !u!1 &2020708214
 GameObject:
