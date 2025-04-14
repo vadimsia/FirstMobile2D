@@ -27,10 +27,7 @@ namespace Resources.Scripts.SpellMode.Skills
         protected override void ActivateSkill()
         {
             // Set up a default contact filter (triggers are not included).
-            ContactFilter2D filter = new ContactFilter2D
-            {
-                useTriggers = false
-            };
+            ContactFilter2D filter = new ContactFilter2D { useTriggers = false };
 
             // Use the non-allocating overload to get colliders within the effect radius.
             int count = Physics2D.OverlapCircle(transform.position, effectRadius, filter, resultsBuffer);

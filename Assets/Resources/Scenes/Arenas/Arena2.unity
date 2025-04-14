@@ -12402,6 +12402,7 @@ MonoBehaviour:
   defaultArenaSettings: {fileID: 11400000, guid: 50e8c44bb8294f642a131d31588aa0a4, type: 2}
   timerText: {fileID: 0}
   clockHand: {fileID: 2913262262336449938}
+  spawnArea: 10
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -14110,7 +14111,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 2
+  m_SortingOrder: 300
   m_TargetDisplay: 0
 --- !u!224 &2061943264
 RectTransform:

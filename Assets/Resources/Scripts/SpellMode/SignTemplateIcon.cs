@@ -27,6 +27,6 @@ namespace Resources.Scripts.SpellMode
 
         [Header("Mana Cost")]
         [Tooltip("Required mana cost to use this sign.")]
-        public float manaCost = 10f; // Configurable via the Inspector for each sign template
+        public float manaCost = 10f; // Настраиваемое значение через Inspector
     }
 }
