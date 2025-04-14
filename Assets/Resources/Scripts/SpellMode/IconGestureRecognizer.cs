@@ -41,7 +41,6 @@ namespace Resources.Scripts.SpellMode
             if (inputPoints == null || inputPoints.Count == 0)
                 return null;
 
-            // Remove explicit 'normalizeRotation' parameter since its default (true) is assumed
             List<Vector2> normalizedInput = usePcaForNormalization ?
                 GestureUtils.NormalizePointsPca(inputPoints, resampleCount, smoothingWindow) :
                 GestureUtils.NormalizePoints(inputPoints, resampleCount, smoothingWindow);
@@ -117,7 +116,7 @@ namespace Resources.Scripts.SpellMode
         }
 
         /// <summary>
-        /// Calculates the Dynamic Time Warping (DTW) distance between two sequences using a jagged array.
+        /// Calculates the Dynamic Time Warping (DTW) distance between two sequences.
         /// </summary>
         private float CalculateDtwDistance(List<Vector2> seqA, List<Vector2> seqB)
         {

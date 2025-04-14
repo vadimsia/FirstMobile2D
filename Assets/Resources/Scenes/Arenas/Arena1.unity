@@ -12402,6 +12402,7 @@ MonoBehaviour:
   defaultArenaSettings: {fileID: 11400000, guid: c9f0ecfe55c4d0b48af3d0004abbf88c, type: 2}
   timerText: {fileID: 0}
   clockHand: {fileID: 7304570839191027151}
+  spawnArea: 10
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -13736,11 +13737,11 @@ PrefabInstance:
       objectReference: {fileID: 543103349}
     - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: joystickSpeed
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: keyboardSpeed
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -14069,7 +14070,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 2
+  m_SortingOrder: 300
   m_TargetDisplay: 0
 --- !u!224 &2061943264
 RectTransform:

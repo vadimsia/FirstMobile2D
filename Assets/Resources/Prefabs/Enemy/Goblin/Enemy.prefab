@@ -93,7 +93,7 @@ MonoBehaviour:
   pushPlayer: 0
   pushForceMultiplier: 1
   goblinAttackCooldownTime: 2
-  bindingDuration: 2
+  bindingDuration: 0.5
   projectileSpeed: 5
   goblinProjectileLifeTime: 5
   goblinProjectileSpreadAngle: 0
