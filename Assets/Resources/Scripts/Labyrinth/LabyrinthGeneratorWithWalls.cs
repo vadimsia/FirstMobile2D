@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering.Universal;  // ← Добавлено для ShadowCaster2D
 using TMPro;
 using Resources.Scripts.Data;
 using Resources.Scripts.Misc;
@@ -49,13 +50,13 @@ namespace Resources.Scripts.Labyrinth
 
         [Header("Настройка смещения стен")]
         [SerializeField, Tooltip("Дополнительное смещение для верхней стены по оси Y")]
-        public float topWallSpacingY = 0f;
+        public float topWallSpacingY;
         [SerializeField, Tooltip("Дополнительное смещение для нижней стены по оси Y")]
-        public float bottomWallSpacingY = 0f;
+        public float bottomWallSpacingY;
         [SerializeField, Tooltip("Дополнительное смещение для левой стены по оси X")]
-        public float leftWallSpacingX = 0f;
+        public float leftWallSpacingX;
         [SerializeField, Tooltip("Дополнительное смещение для правой стены по оси X")]
-        public float rightWallSpacingX = 0f;
+        public float rightWallSpacingX;
 
         [Header("Настройки коллайдеров стен")]
         [SerializeField, Tooltip("Включить добавление коллайдеров к стенам")]
@@ -180,6 +181,7 @@ namespace Resources.Scripts.Labyrinth
                         topWall.name = $"TopWall_R{row}_C{col}";
                         SetSortingOrder(topWall, row * sortingOffset + col);
                         AddCollider(topWall, WallOrientation.Top);
+                        AddShadowCaster(topWall); // ← Добавлено
                     }
 
                     // Нижняя стена
@@ -190,12 +192,12 @@ namespace Resources.Scripts.Labyrinth
                         bottomWall.name = $"BottomWall_R{row}_C{col}";
                         SetSortingOrder(bottomWall, row * sortingOffset + col + 2);
                         AddCollider(bottomWall, WallOrientation.Bottom);
+                        AddShadowCaster(bottomWall); // ← Добавлено
                     }
 
                     // Левая стена
                     if (cell.LeftBorder)
                     {
-                        // Проверяем, есть ли в ячейке ниже (row+1) хотя бы одна стена
                         bool belowWallExists = false;
                         if (row < rows - 1)
                         {
@@ -219,13 +221,13 @@ namespace Resources.Scripts.Labyrinth
                         {
                             SetSortingOrder(leftWallObj, row * sortingOffset + col + 1);
                             AddCollider(leftWallObj, WallOrientation.Left);
+                            AddShadowCaster(leftWallObj); // ← Добавлено
                         }
                     }
 
                     // Правая стена
                     if (cell.RightBorder)
                     {
-                        // Проверяем, есть ли в ячейке ниже хотя бы одна стена
                         bool belowWallExists = false;
                         if (row < rows - 1)
                         {
@@ -249,6 +251,7 @@ namespace Resources.Scripts.Labyrinth
                         {
                             SetSortingOrder(rightWallObj, row * sortingOffset + col + 1);
                             AddCollider(rightWallObj, WallOrientation.Right);
+                            AddShadowCaster(rightWallObj); // ← Добавлено
                         }
                     }
 
@@ -283,8 +286,6 @@ namespace Resources.Scripts.Labyrinth
         /// Добавляет BoxCollider2D к стене, если включены настройки коллайдеров.
         /// Настраивает его размер и смещение в зависимости от ориентации стены.
         /// </summary>
-        /// <param name="wallObj">Объект стены</param>
-        /// <param name="orientation">Ориентация стены</param>
         private void AddCollider(GameObject wallObj, WallOrientation orientation)
         {
             if (!enableWallColliders || wallObj == null)
@@ -314,6 +315,18 @@ namespace Resources.Scripts.Labyrinth
                     collider.size = verticalColliderSize;
                     collider.offset = rightColliderOffset;
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Добавляет ShadowCaster2D к объекту, чтобы стена отбрасывала тень.
+        /// </summary>
+        private void AddShadowCaster(GameObject obj)
+        {
+            if (obj == null) return;
+            if (obj.GetComponent<ShadowCaster2D>() == null)
+            {
+                obj.AddComponent<ShadowCaster2D>();
             }
         }
 
