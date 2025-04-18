@@ -1,3 +1,4 @@
+// Resources/Scripts/GameManagers/ArenaManager.cs
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
@@ -13,45 +14,35 @@ namespace Resources.Scripts.GameManagers
 
         [Header("UI Таймер")]
         [SerializeField] private TextMeshProUGUI timerText;
-
-        [Header("UI Стрелка таймера (Clock Hand)")]
         [SerializeField] private RectTransform clockHand;
 
-        // Область спавна определяется как квадрат с координатами от -spawnArea до +spawnArea по осям X и Y.
         [Header("Параметры спавна")]
-        [Tooltip("Половина размера области спавна (например, 50 означает, что объекты будут генерироваться в диапазоне от -50 до 50)")]
+        [Tooltip("Половина размера области спавна (например, 50 означает, что объекты генерируются в диапазоне от -50 до 50)")]
         [SerializeField] private float spawnArea = 50f;
 
         private ArenaSettings currentSettings;
         private float timer;
         private bool playerSurvived;
-
-        // Позиции для спавна препятствий, сгенерированные алгоритмом Poisson Disk Sampling.
         private List<Vector3> obstacleSpawnPositions = new List<Vector3>();
 
         private void Start()
         {
-            // Берём настройки арены из выбранного этапа или используем настройки по умолчанию.
+            // подгружаем настройки
             if (GameStageManager.currentStageData != null && GameStageManager.currentStageData.arenaSettings != null)
-            {
                 currentSettings = GameStageManager.currentStageData.arenaSettings;
-            }
             else
-            {
                 currentSettings = defaultArenaSettings;
-            }
 
             timer = currentSettings.survivalTime;
             if (clockHand != null)
-            {
                 clockHand.localRotation = Quaternion.Euler(0f, 0f, -90f);
-            }
+
             InitializeArena();
+
+            if (currentSettings.plantTreesAtEdges)
+                PlantEdgeTrees();
         }
 
-        /// <summary>
-        /// Инициализация арены: спавн врагов, фей и препятствий.
-        /// </summary>
         private void InitializeArena()
         {
             Debug.Log("Arena инициализирована.");
@@ -60,224 +51,225 @@ namespace Resources.Scripts.GameManagers
             SpawnObstacles();
         }
 
-        /// <summary>
-        /// Спавн врагов на арене.
-        /// </summary>
         private void SpawnEnemies()
         {
             for (int i = 0; i < currentSettings.enemyCount; i++)
             {
                 if (currentSettings.enemyPrefabs.Length == 0)
                 {
-                    Debug.LogWarning("Enemy Prefabs не заданы в ArenaSettings.");
+                    Debug.LogWarning("Enemy Prefabs не заданы.");
                     break;
                 }
-                GameObject enemyPrefab = currentSettings.enemyPrefabs[Random.Range(0, currentSettings.enemyPrefabs.Length)];
-                Instantiate(enemyPrefab, GetRandomPosition(), Quaternion.identity);
+                var prefab = currentSettings.enemyPrefabs[Random.Range(0, currentSettings.enemyPrefabs.Length)];
+                Instantiate(prefab, GetRandomPosition(), Quaternion.identity);
             }
         }
 
-        /// <summary>
-        /// Спавн фей на арене.
-        /// </summary>
         private void SpawnFairies()
         {
             for (int i = 0; i < currentSettings.fairyCount; i++)
             {
                 if (currentSettings.fairyPrefabs.Length == 0)
                 {
-                    Debug.LogWarning("Fairy Prefabs не заданы в ArenaSettings.");
+                    Debug.LogWarning("Fairy Prefabs не заданы.");
                     break;
                 }
-                GameObject fairyPrefab = currentSettings.fairyPrefabs[Random.Range(0, currentSettings.fairyPrefabs.Length)];
-                Instantiate(fairyPrefab, GetRandomPosition(), Quaternion.identity);
+                var prefab = currentSettings.fairyPrefabs[Random.Range(0, currentSettings.fairyPrefabs.Length)];
+                Instantiate(prefab, GetRandomPosition(), Quaternion.identity);
             }
         }
 
-        /// <summary>
-        /// Спавн препятствий по всей области.
-        /// Используется Poisson Disk Sampling для генерации позиций, удовлетворяющих условию минимального расстояния.
-        /// Каждому типу препятствия назначается случайное количество экземпляров, и для каждого выбирается случайная позиция из списка.
-        /// </summary>
         private void SpawnObstacles()
         {
-            if (currentSettings.obstacleTypes == null || currentSettings.obstacleTypes.Length == 0)
+            var types = currentSettings.obstacleTypes;
+            if (types == null || types.Length == 0)
             {
-                Debug.LogWarning("Препятствия не заданы в настройках арены.");
+                Debug.LogWarning("Препятствия не заданы.");
                 return;
             }
-            
-            // Генерируем позиции для спавна препятствий.
-            // Размер региона – это 2 * spawnArea (квадрат от -spawnArea до +spawnArea).
-            float regionSize = spawnArea * 2f;
-            obstacleSpawnPositions = GeneratePoissonPoints(
-                currentSettings.obstacleMinDistance,
-                regionSize,
-                30 // число попыток для каждого спавн-поинта
-            );
 
-            int totalRequired = 0;
-            foreach (var obstacleSettings in currentSettings.obstacleTypes)
-            {
-                totalRequired += Random.Range(obstacleSettings.minCount, obstacleSettings.maxCount + 1);
-            }
+            float region = spawnArea * 2f;
+            obstacleSpawnPositions = GeneratePoissonPoints(currentSettings.obstacleMinDistance, region, 30);
 
-            if(obstacleSpawnPositions.Count < totalRequired)
+            int required = 0;
+            foreach (var os in types)
+                required += Random.Range(os.minCount, os.maxCount + 1);
+
+            if (obstacleSpawnPositions.Count < required)
+                Debug.LogWarning($"Позиций {obstacleSpawnPositions.Count}, требуется {required}.");
+
+            foreach (var os in types)
             {
-                Debug.LogWarning($"Доступно позиций: {obstacleSpawnPositions.Count}, а требуется минимум: {totalRequired}. " +
-                                 "Возможно, уменьшите значение минимального расстояния между препятствиями или увеличьте область спавна.");
-            }
-            
-            // Для каждого типа препятствия спавним нужное число экземпляров.
-            foreach (var obstacleSettings in currentSettings.obstacleTypes)
-            {
-                int count = Random.Range(obstacleSettings.minCount, obstacleSettings.maxCount + 1);
-                for (int i = 0; i < count; i++)
+                int cnt = Random.Range(os.minCount, os.maxCount + 1);
+                for (int i = 0; i < cnt; i++)
                 {
-                    // Пропуск спавна по вероятности.
-                    if (Random.value > obstacleSettings.spawnProbability)
-                        continue;
+                    if (Random.value > os.spawnProbability) continue;
+                    if (obstacleSpawnPositions.Count == 0) return;
 
-                    if (obstacleSpawnPositions.Count == 0)
-                    {
-                        Debug.LogWarning("Закончились доступные позиции для препятствий.");
-                        return;
-                    }
+                    int idx = Random.Range(0, obstacleSpawnPositions.Count);
+                    var pos = obstacleSpawnPositions[idx];
+                    obstacleSpawnPositions.RemoveAt(idx);
 
-                    int index = Random.Range(0, obstacleSpawnPositions.Count);
-                    Vector3 spawnPosition = obstacleSpawnPositions[index];
-                    obstacleSpawnPositions.RemoveAt(index);
-
-                    Quaternion rotation = Quaternion.identity;
-                    GameObject obstacleInstance = Instantiate(obstacleSettings.obstaclePrefab, spawnPosition, rotation);
-                    
-                    float scale = Random.Range(obstacleSettings.minScale, obstacleSettings.maxScale);
-                    obstacleInstance.transform.localScale = new Vector3(scale, scale, scale);
+                    var inst = Instantiate(os.obstaclePrefab, pos, Quaternion.identity);
+                    float s = Random.Range(os.minScale, os.maxScale);
+                    inst.transform.localScale = new Vector3(s, s, s);
                 }
             }
         }
 
-        /// <summary>
-        /// Возвращает случайную позицию в пределах области спавна по плоскости X-Y (Z фиксирована на 0).
-        /// </summary>
         private Vector3 GetRandomPosition()
-        {
-            return new Vector3(
+            => new Vector3(
                 Random.Range(-spawnArea, spawnArea),
                 Random.Range(-spawnArea, spawnArea),
                 0f
             );
-        }
 
-        /// <summary>
-        /// Алгоритм Poisson Disk Sampling для генерации точек, разделённых минимальным расстоянием.
-        /// Размер региона задаётся как квадрат со стороной regionSize.
-        /// </summary>
-        /// <param name="minDistance">Минимальное расстояние между точками</param>
-        /// <param name="regionSize">Размер стороны квадратного региона</param>
-        /// <param name="numSamplesBeforeRejection">Количество попыток для каждой точки</param>
-        /// <returns>Список точек типа Vector3 (ось Z = 0)</returns>
-        private List<Vector3> GeneratePoissonPoints(float minDistance, float regionSize, int numSamplesBeforeRejection)
+        private List<Vector3> GeneratePoissonPoints(float minDist, float size, int attempts)
         {
-            List<Vector3> points = new List<Vector3>();
-            List<Vector2> spawnPoints = new List<Vector2>();
+            var pts = new List<Vector3>();
+            var spawn = new List<Vector2>();
+            var first = new Vector2(
+                Random.Range(-size/2f, size/2f),
+                Random.Range(-size/2f, size/2f)
+            );
+            pts.Add(new Vector3(first.x, first.y, 0f));
+            spawn.Add(first);
 
-            // Начальная точка выбирается случайно внутри региона
-            Vector2 firstPoint = new Vector2(Random.Range(-regionSize/2f, regionSize/2f), Random.Range(-regionSize/2f, regionSize/2f));
-            points.Add(new Vector3(firstPoint.x, firstPoint.y, 0f));
-            spawnPoints.Add(firstPoint);
-
-            while (spawnPoints.Count > 0)
+            while (spawn.Count > 0)
             {
-                int spawnIndex = Random.Range(0, spawnPoints.Count);
-                Vector2 spawnCenter = spawnPoints[spawnIndex];
-                bool candidateAccepted = false;
-                
-                for (int i = 0; i < numSamplesBeforeRejection; i++)
+                int i = Random.Range(0, spawn.Count);
+                var center = spawn[i];
+                bool accepted = false;
+                for (int t = 0; t < attempts; t++)
                 {
-                    float angle = Random.value * Mathf.PI * 2;
-                    Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                    Vector2 candidate = spawnCenter + dir * Random.Range(minDistance, 2 * minDistance);
-                    
-                    // Проверяем, находится ли точка внутри региона
-                    if (candidate.x >= -regionSize/2f && candidate.x <= regionSize/2f &&
-                        candidate.y >= -regionSize/2f && candidate.y <= regionSize/2f)
+                    float ang = Random.value * Mathf.PI * 2f;
+                    var dir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+                    var cand = center + dir * Random.Range(minDist, 2*minDist);
+
+                    if (cand.x >= -size/2f && cand.x <= size/2f &&
+                        cand.y >= -size/2f && cand.y <= size/2f)
                     {
-                        bool isValid = true;
-                        foreach (var p in points)
+                        bool ok = true;
+                        foreach (var p in pts)
+                            if (Vector2.Distance(cand, new Vector2(p.x, p.y)) < minDist)
+                            { ok = false; break; }
+
+                        if (ok)
                         {
-                            if (Vector2.Distance(candidate, new Vector2(p.x, p.y)) < minDistance)
-                            {
-                                isValid = false;
-                                break;
-                            }
-                        }
-                        if (isValid)
-                        {
-                            points.Add(new Vector3(candidate.x, candidate.y, 0f));
-                            spawnPoints.Add(candidate);
-                            candidateAccepted = true;
+                            pts.Add(new Vector3(cand.x, cand.y, 0f));
+                            spawn.Add(cand);
+                            accepted = true;
                         }
                     }
                 }
-                if (!candidateAccepted)
-                {
-                    spawnPoints.RemoveAt(spawnIndex);
-                }
+                if (!accepted) spawn.RemoveAt(i);
             }
-            return points;
+            return pts;
+        }
+
+        private void PlantEdgeTrees()
+        {
+            var types = currentSettings.obstacleTypes;
+            if (types == null || types.Length < 2)
+            {
+                Debug.LogWarning("Нужно хотя бы 2 типа препятствий для деревьев.");
+                return;
+            }
+
+            var prefabs = new GameObject[] {
+                types[0].obstaclePrefab,
+                types[1].obstaclePrefab
+            };
+
+            float half = spawnArea;
+            var posList = new List<Vector3>();
+
+            // создаём случайные позиции в 4 полосах толщины edgeForestThickness
+            for (int i = 0; i < currentSettings.edgeTreesPerSide; i++)
+            {
+                // Top
+                posList.Add(new Vector3(
+                    Random.Range(-half, half),
+                    Random.Range(half - currentSettings.edgeForestThickness, half),
+                    0f));
+
+                // Bottom
+                posList.Add(new Vector3(
+                    Random.Range(-half, half),
+                    Random.Range(-half, -half + currentSettings.edgeForestThickness),
+                    0f));
+
+                // Left
+                posList.Add(new Vector3(
+                    Random.Range(-half, -half + currentSettings.edgeForestThickness),
+                    Random.Range(-half, half),
+                    0f));
+
+                // Right
+                posList.Add(new Vector3(
+                    Random.Range(half - currentSettings.edgeForestThickness, half),
+                    Random.Range(-half, half),
+                    0f));
+            }
+
+            foreach (var basePos in posList)
+            {
+                // джиттер
+                float jx = Random.Range(-currentSettings.edgeTreeJitterRange.x, currentSettings.edgeTreeJitterRange.x);
+                float jy = Random.Range(-currentSettings.edgeTreeJitterRange.y, currentSettings.edgeTreeJitterRange.y);
+                Vector3 p = new Vector3(basePos.x + jx, basePos.y + jy, 0f);
+
+                var prefab = prefabs[Random.Range(0, prefabs.Length)];
+                var tree = Instantiate(prefab, p, Quaternion.identity);
+
+                float scale = Random.Range(
+                    currentSettings.edgeTreeScaleRange.x,
+                    currentSettings.edgeTreeScaleRange.y);
+                tree.transform.localScale = new Vector3(scale, scale, scale);
+
+                if (currentSettings.disableEdgeTreeColliders)
+                    foreach (var col in tree.GetComponentsInChildren<Collider>())
+                        col.enabled = false;
+            }
+
+            Debug.Log($"Посажено деревьев по краям: {posList.Count}");
         }
 
         private void Update()
         {
-            if (!playerSurvived)
-            {
-                timer -= Time.deltaTime;
-                UpdateTimerUI();
+            if (playerSurvived) return;
 
-                if (timer <= 0f)
-                {
-                    playerSurvived = true;
-                    LoadLabyrinthScene();
-                }
+            timer -= Time.deltaTime;
+            UpdateTimerUI();
+
+            if (timer <= 0f)
+            {
+                playerSurvived = true;
+                LoadLabyrinthScene();
             }
         }
 
-        /// <summary>
-        /// Обновляет UI таймера и поворот стрелки.
-        /// </summary>
         private void UpdateTimerUI()
         {
             if (timerText != null)
-            {
                 timerText.text = $"{timer:F1}";
-            }
-
             if (clockHand != null)
             {
-                float normalizedTime = Mathf.Clamp01(timer / currentSettings.survivalTime);
-                float angle = -90f - (1f - normalizedTime) * 360f;
-                clockHand.localRotation = Quaternion.Euler(0f, 0f, angle);
+                float norm = Mathf.Clamp01(timer / currentSettings.survivalTime);
+                float ang = -90f - (1f - norm) * 360f;
+                clockHand.localRotation = Quaternion.Euler(0f, 0f, ang);
             }
         }
 
-        /// <summary>
-        /// Перезагружает текущую сцену в случае смерти игрока.
-        /// </summary>
         public void OnPlayerDeath()
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
-        /// <summary>
-        /// Загружает следующую сцену (например, лабиринт) после успешного выживания.
-        /// </summary>
         private void LoadLabyrinthScene()
         {
             if (GameStageManager.currentStageData != null)
-            {
                 SceneManager.LoadScene(GameStageManager.currentStageData.labyrinthSceneName);
-            }
         }
     }
 }
