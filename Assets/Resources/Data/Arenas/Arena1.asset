@@ -43,3 +43,9 @@ MonoBehaviour:
     minScale: 0.3
     maxScale: 0.3
   obstacleMinDistance: 3
+  plantTreesAtEdges: 1
+  edgeForestThickness: 1
+  edgeTreesPerSide: 100
+  edgeTreeScaleRange: {x: 0.5, y: 0.8}
+  edgeTreeJitterRange: {x: 2, y: 2}
+  disableEdgeTreeColliders: 1
