@@ -12898,11 +12898,11 @@ PrefabInstance:
       objectReference: {fileID: 543103349}
     - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: joystickSpeed
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: keyboardSpeed
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
