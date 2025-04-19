@@ -37,10 +37,9 @@ namespace Resources.Scripts.SpellMode
         public float minTotalPathLength = 1.0f;
 
         [Header("Recognition Settings")]
-        public IconGestureRecognizer gestureRecognizer; // Переименовано согласно конвенциям
+        public IconGestureRecognizer gestureRecognizer;
         public int resampleCount = 64;
         public int smoothingWindow = 3;
-        // 'normalizeRotation' используется по умолчанию (true)
 
         [Header("Player Stats")]
         [Tooltip("Reference to the component managing the player's mana.")]
@@ -61,10 +60,12 @@ namespace Resources.Scripts.SpellMode
         private LineRenderer currentLine;
         private bool hasMoved;
 
-        // Новая коллекция для накопления распознанных знаков (комбо)
+        // Накопление распознанных знаков (комбо)
         private List<SignTemplateIcon> recognizedSigns = new List<SignTemplateIcon>();
-        // Таймер ожидания между жестами для комбо
-        private float comboTimer = 0f;
+        private float comboTimer;
+
+        // Накопление затраченной маны за сессию
+        private float totalManaUsed;
 
         void Start()
         {
@@ -95,17 +96,14 @@ namespace Resources.Scripts.SpellMode
             {
                 noMovementTimer += Time.deltaTime;
 
-                // Если включён режим комбо и прошло время без движения, фиксируем завершение сегмента
                 if (enableComboMode && hasMoved && noMovementTimer >= stopTimeThreshold)
                 {
                     ProcessPartialDrawing();
-                    noMovementTimer = 0f; // Сброс таймера для следующего жеста
+                    noMovementTimer = 0f;
                     drawnPoints.Clear();
-                    // Можно создать новый LineRenderer для нового сегмента, если требуется визуальное разделение
                 }
                 else if (!enableComboMode && hasMoved && noMovementTimer >= stopTimeThreshold)
                 {
-                    // Если комбо отключены, сразу завершаем рисование
                     EndDrawing();
                     return;
                 }
@@ -116,7 +114,6 @@ namespace Resources.Scripts.SpellMode
                 EndDrawing();
             }
 
-            // Если уже накоплены распознанные жесты, следим за временем ожидания следующего
             if (recognizedSigns.Count > 0)
             {
                 comboTimer += Time.deltaTime;
@@ -127,12 +124,8 @@ namespace Resources.Scripts.SpellMode
             }
         }
 
-        /// <summary>
-        /// Starts the drawing process.
-        /// </summary>
         public void StartDrawing()
         {
-            // Сброс предыдущей линии (если есть)
             if (currentLine != null)
             {
                 Destroy(currentLine.gameObject);
@@ -145,7 +138,8 @@ namespace Resources.Scripts.SpellMode
             comboTimer = 0f;
             hasMoved = false;
             drawnPoints.Clear();
-            recognizedSigns.Clear(); // Очистка накопленных знаков для новой сессии
+            recognizedSigns.Clear();
+            totalManaUsed = 0f;
             lastRecordedPosition = transform.position;
             drawnPoints.Add(lastRecordedPosition);
 
@@ -174,9 +168,6 @@ namespace Resources.Scripts.SpellMode
                 feedbackText.text = "Drawing...";
         }
 
-        /// <summary>
-        /// Ends the drawing process and processes all recognized gestures.
-        /// </summary>
         public void EndDrawing()
         {
             if (!isDrawing)
@@ -186,11 +177,8 @@ namespace Resources.Scripts.SpellMode
             if (feedbackText != null)
                 feedbackText.text = "Processing...";
 
-            // Если ещё есть накопленные точки, пытаемся распознать их как последний жест
             if (drawnPoints.Count >= minPointsForRecognition)
-            {
                 ProcessPartialDrawing();
-            }
 
             if (recognizedSigns.Count == 0)
             {
@@ -199,27 +187,22 @@ namespace Resources.Scripts.SpellMode
                 return;
             }
 
-            // Определяем, является ли сессия комбо (комбинированным вводом)
             bool isCombo = recognizedSigns.Count >= 2;
 
-            // Применяем навыки поочередно для каждого распознанного знака
             foreach (SignTemplateIcon template in recognizedSigns)
-            {
                 ExecuteSkill(template, isCombo);
-            }
 
             if (feedbackText != null)
-                feedbackText.text = isCombo ? "Combo Skill Activated!" : "Skill Activated!";
+            {
+                string baseMessage = isCombo ? "Combo Skill Activated!" : "Skill Activated!";
+                feedbackText.text = $"{baseMessage} Used {totalManaUsed:F0} mana.";
+            }
 
-            // Сброс сессии
             recognizedSigns.Clear();
             drawnPoints.Clear();
             comboTimer = 0f;
         }
 
-        /// <summary>
-        /// Обрабатывает завершённый сегмент рисования, распознаёт жест и добавляет его в список.
-        /// </summary>
         private void ProcessPartialDrawing()
         {
             if (drawnPoints.Count < minPointsForRecognition)
@@ -227,42 +210,30 @@ namespace Resources.Scripts.SpellMode
 
             float totalLength = 0f;
             for (int i = 1; i < drawnPoints.Count; i++)
-            {
                 totalLength += Vector3.Distance(drawnPoints[i - 1], drawnPoints[i]);
-            }
+
             if (totalLength < minTotalPathLength)
                 return;
 
-            // Преобразуем 3D-точки в 2D
             List<Vector2> points2D = new List<Vector2>();
             foreach (Vector3 pt in drawnPoints)
-            {
                 points2D.Add(new Vector2(pt.x, pt.y));
-            }
 
-            // Нормализация точек (используем метод NormalizePoints с заданными параметрами)
             List<Vector2> normalizedInput = GestureUtils.NormalizePoints(points2D, resampleCount, smoothingWindow);
             Debug.Log("Normalized Input: " + Vector2ListToString(normalizedInput));
 
-            // Распознаём жест через IconGestureRecognizer
             SignTemplateIcon recognized = gestureRecognizer.Recognize(normalizedInput);
             if (recognized != null)
             {
                 recognizedSigns.Add(recognized);
-                comboTimer = 0f; // Сброс таймера между жестами
+                comboTimer = 0f;
                 if (feedbackText != null)
                     feedbackText.text = "Added: " + recognized.id;
             }
         }
 
-        /// <summary>
-        /// Выполняет навык, с учётом режима комбо (усиление эффектов).
-        /// </summary>
-        /// <param name="template">Шаблон распознанного знака</param>
-        /// <param name="isCombo">Флаг, указывающий, что введено комбо (2 и более знаков)</param>
         private void ExecuteSkill(SignTemplateIcon template, bool isCombo)
         {
-            // Проверка количества маны
             if (playerStatsHandler != null)
             {
                 if (!playerStatsHandler.UseMana(template.manaCost))
@@ -271,6 +242,8 @@ namespace Resources.Scripts.SpellMode
                         feedbackText.text = "Not enough mana";
                     return;
                 }
+                totalManaUsed += template.manaCost;
+                Debug.Log($"Used {template.manaCost:F0} mana for {template.id}");
             }
 
             if (template.skillPrefab != null)
@@ -278,37 +251,26 @@ namespace Resources.Scripts.SpellMode
                 GameObject skillObj = Instantiate(template.skillPrefab, transform.position, Quaternion.identity);
                 if (isCombo)
                 {
-                    // Здесь корректируем параметры навыка в зависимости от типа знака.
-                    // Сопоставление идёт по id шаблона (например, "circle", "square", "triangle").
                     SkillBase skillComponent = skillObj.GetComponent<SkillBase>();
                     if (skillComponent != null)
                     {
-                        // Если знак "Круг" – отталкивание врагов
                         if (template.id.ToLower().Contains("circle"))
                         {
                             PushEnemiesSkill pushSkill = skillComponent as PushEnemiesSkill;
                             if (pushSkill != null)
-                            {
-                                pushSkill.pushForce *= 1.5f; // +50% к силе отталкивания
-                            }
+                                pushSkill.pushForce *= 1.5f;
                         }
-                        // Если знак "Квадрат" – замедление врагов
                         else if (template.id.ToLower().Contains("square"))
                         {
                             SlowEnemiesSkill slowSkill = skillComponent as SlowEnemiesSkill;
                             if (slowSkill != null)
-                            {
-                                slowSkill.slowDuration *= 1.5f; // +50% к длительности замедления
-                            }
+                                slowSkill.slowDuration *= 1.5f;
                         }
-                        // Если знак "Треугольник" – ускорение игрока
                         else if (template.id.ToLower().Contains("triangle"))
                         {
                             SpeedBoostSkill speedSkill = skillComponent as SpeedBoostSkill;
                             if (speedSkill != null)
-                            {
-                                speedSkill.boostDuration += 50f; // Прибавляем фиксированное значение, например 50 секунд
-                            }
+                                speedSkill.boostDuration += 50f;
                         }
                     }
                 }
@@ -319,9 +281,6 @@ namespace Resources.Scripts.SpellMode
             }
         }
 
-        /// <summary>
-        /// Обновляет позиции LineRenderer для отображения нарисованной линии.
-        /// </summary>
         private void UpdateDrawingLine()
         {
             if (currentLine == null)
@@ -329,21 +288,14 @@ namespace Resources.Scripts.SpellMode
 
             currentLine.positionCount = drawnPoints.Count;
             for (int i = 0; i < drawnPoints.Count; i++)
-            {
                 currentLine.SetPosition(i, drawnPoints[i]);
-            }
         }
 
-        /// <summary>
-        /// Преобразует список Vector2 точек в форматированную строку.
-        /// </summary>
         private string Vector2ListToString(List<Vector2> points)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             foreach (Vector2 p in points)
-            {
                 sb.AppendFormat("({0:F2}, {1:F2}) ", p.x, p.y);
-            }
             return sb.ToString();
         }
     }
