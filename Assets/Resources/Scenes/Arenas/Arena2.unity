@@ -12120,6 +12120,54 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &388680088
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 388680089}
+  - component: {fileID: 388680090}
+  m_Layer: 0
+  m_Name: TumbleweedSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &388680089
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388680088}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2020708215}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &388680090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388680088}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 453c1bf2ba7aaf54fa746415ab4e7107, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tumbleweedPrefab: {fileID: 7568341120262055036, guid: 5bd91b0424205b84bb51732729d31f5d, type: 3}
+  minSpawnPos: {x: -10, y: -10}
+  maxSpawnPos: {x: 10, y: 10}
+  maxTumbleweeds: 5
 --- !u!1 &437297124
 GameObject:
   m_ObjectHideFlags: 0
@@ -12196,7 +12244,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 19, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1081319689}
@@ -12402,7 +12450,7 @@ MonoBehaviour:
   defaultArenaSettings: {fileID: 11400000, guid: 50e8c44bb8294f642a131d31588aa0a4, type: 2}
   timerText: {fileID: 0}
   clockHand: {fileID: 2913262262336449938}
-  spawnArea: 10
+  spawnArea: 15
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -12848,6 +12896,10 @@ PrefabInstance:
       propertyPath: gestureRecognizer
       value: 
       objectReference: {fileID: 2053543740}
+    - target: {fileID: 2992285719649780434, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_SortingOrder
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 7684459473974908381, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_Name
       value: Player
@@ -12952,7 +13004,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
   m_LocalPosition: {x: 0.5, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 19, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1081319689}
@@ -13068,7 +13120,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 19, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1081319689}
@@ -13348,14 +13400,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tilemapComponent: {fileID: 188324151}
   grassTiles:
-  - {fileID: 11400000, guid: 9f14f51efaff3e34eb411f0b291e768b, type: 2}
-  - {fileID: 11400000, guid: 7555345bbb24eca4489cab0bb8fba963, type: 2}
-  - {fileID: 11400000, guid: 0b451d04c3494564988c9c63a8e14f84, type: 2}
-  - {fileID: 11400000, guid: 228b999d033c60943a67f0056c3980c3, type: 2}
-  - {fileID: 11400000, guid: 8bad50e1611971845996d317e3dcade7, type: 2}
-  - {fileID: 11400000, guid: ee3c7aba6d6c7f247a71b64f6ee754e2, type: 2}
-  - {fileID: 11400000, guid: 769cce3e6c2e495449319c60dd7b614b, type: 2}
-  - {fileID: 11400000, guid: 39f888c5e7b560846b407001dbe6094d, type: 2}
+  - {fileID: 11400000, guid: eda83ce72934f764aa575d4c8294e8b8, type: 2}
+  - {fileID: 11400000, guid: 5816ced8d99bd4346891e1bff5bdc65a, type: 2}
+  - {fileID: 11400000, guid: 02f6d023278c7b843b948c10b3bf362d, type: 2}
+  - {fileID: 11400000, guid: 4dcbb9f0f12b0ee4b825288efc51b7d3, type: 2}
+  - {fileID: 11400000, guid: 34a5b59aae1022b4798496e44891400a, type: 2}
+  - {fileID: 11400000, guid: 2f72196470e828b40ab96f6f04e0892d, type: 2}
+  - {fileID: 11400000, guid: 3ba0f217d35562348a41cdd991ef8bbb, type: 2}
   width: 30
   height: 30
 --- !u!1 &1081319687
@@ -13895,6 +13946,7 @@ Transform:
   - {fileID: 507496245}
   - {fileID: 437297125}
   - {fileID: 2053543739}
+  - {fileID: 388680089}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2042723058
@@ -13924,7 +13976,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
   m_LocalPosition: {x: -0.5, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 19, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1081319689}

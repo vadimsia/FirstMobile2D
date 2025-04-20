@@ -24,22 +24,22 @@ MonoBehaviour:
   - obstacleName: Tree1
     obstaclePrefab: {fileID: 143051503383912999, guid: 7166337d9c4d62a47a3e11597ee3904f, type: 3}
     spawnProbability: 1
-    minCount: 5
-    maxCount: 10
+    minCount: 10
+    maxCount: 15
     minScale: 0.5
     maxScale: 0.5
   - obstacleName: Tree2
     obstaclePrefab: {fileID: 3894714042269102509, guid: 5636a8cdc0d7ac64f98cb945741a4c81, type: 3}
     spawnProbability: 1
-    minCount: 5
-    maxCount: 10
+    minCount: 10
+    maxCount: 15
     minScale: 0.5
     maxScale: 0.5
   - obstacleName: Bush
     obstaclePrefab: {fileID: 869883721712576763, guid: f3de8a1d8df4ff8438a507246e032db6, type: 3}
     spawnProbability: 1
-    minCount: 5
-    maxCount: 10
+    minCount: 10
+    maxCount: 15
     minScale: 0.3
     maxScale: 0.3
   obstacleMinDistance: 3
