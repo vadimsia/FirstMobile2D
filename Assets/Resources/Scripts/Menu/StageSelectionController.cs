@@ -16,6 +16,10 @@ namespace Resources.Scripts.Menu
         [SerializeField] private Button playButton;
         [SerializeField] private Button closeButton;
 
+        [Header("Фон панели")]
+        [SerializeField] private Image panelBackground;
+        [SerializeField] private Sprite[] backgroundSprites; // 0 — лес, 1 — песок и т.д.
+
         [Header("Данные этапов")]
         [SerializeField] private StageData[] stages;
 
@@ -35,10 +39,20 @@ namespace Resources.Scripts.Menu
             if (stages == null || stages.Length == 0)
                 return;
 
+            // Обновляем название и картинку этапа
             StageData currentStage = stages[currentStageIndex];
             stageNameText.text = currentStage.stageName;
             stageImage.sprite = currentStage.stageImage;
 
+            // Меняем фон панели в соответствии с индексом
+            if (backgroundSprites != null &&
+                currentStageIndex < backgroundSprites.Length &&
+                panelBackground != null)
+            {
+                panelBackground.sprite = backgroundSprites[currentStageIndex];
+            }
+
+            // Делаем кнопки навигации активными/неактивными
             leftButton.interactable = currentStageIndex > 0;
             rightButton.interactable = currentStageIndex < stages.Length - 1;
         }
