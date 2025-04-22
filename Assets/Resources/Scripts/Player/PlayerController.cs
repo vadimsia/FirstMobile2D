@@ -4,13 +4,13 @@ using Resources.Scripts.Enemy;
 using Resources.Scripts.Fairy;
 using Resources.Scripts.Misc;
 using UnityEngine.Rendering.Universal; // For Light2D
-using Resources.Scripts.Labyrinth;       // For accessing LabyrinthMapController
+using Resources.Scripts.Labyrinth;
 
 namespace Resources.Scripts.Player
 {
     /// <summary>
     /// Controls player movement, interactions, dynamic light range based on proximity to the finish point,
-    /// and handles animation switching.
+    /// handles animation switching and dodge roll functionality.
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
@@ -18,43 +18,50 @@ namespace Resources.Scripts.Player
 
         private const string IdleAnimationName = "Idle";
         private const string RunAnimationName = "Run";
+        private const string RollAnimationName = "Roll";
 
         #endregion
 
         #region Inspector Fields
 
         [Header("Movement Settings")]
-        [SerializeField, Range(1, 10), Tooltip("Movement speed when using keyboard input.")]
+        [SerializeField, Range(1, 10)]
         private float keyboardSpeed = 3f;
-        [SerializeField, Range(1, 10), Tooltip("Movement speed when using joystick input.")]
+        [SerializeField, Range(1, 10)]
         private float joystickSpeed = 3f;
-        [SerializeField, Tooltip("Reference to the custom joystick component (optional).")]
+        [SerializeField]
         private PlayerJoystick joystick;
-        [SerializeField, Tooltip("Prefab for trap objects (if needed).")]
+        [SerializeField]
         private GameObject trapPrefab;
 
         [Header("Light Settings")]
-        [SerializeField, Tooltip("Reference to the Light2D component attached to the player.")]
+        [SerializeField]
         private Light2D playerLight;
-        [SerializeField, Tooltip("Reference to the finish marker transform (assigned from labyrinth).")]
+        [SerializeField]
         private Transform finishPoint;
-        [SerializeField, Range(0.1f, 5f), Tooltip("Base light range (fixed value).")]
+        [SerializeField, Range(0.1f, 5f)]
         private float baseLightRange = 1f;
-        [SerializeField, Range(1f, 2f), Tooltip("Maximum light range when near the finish.")]
+        [SerializeField, Range(1f, 2f)]
         private float maxLightRange = 2f;
 
         [Header("Player Settings")]
-        [Tooltip("If enabled, the player will be immune to damage.")]
         public bool isImmortal;
 
         [Header("Animation Settings")]
-        [SerializeField, Tooltip("Animator component for controlling player animations.")]
+        [SerializeField]
         private Animator animator;
 
         [Header("DarkSkull / Troll Damage Settings")]
-        [Tooltip("Максимальное число ударов от DarkSkull, после которых игрок умирает.")]
         [SerializeField]
         private int maxDarkSkullHits = 2;
+
+        [Header("Dodge Roll Settings")]
+        [SerializeField]
+        private float rollSpeed = 6f;
+        [SerializeField]
+        private float rollDuration = 0.3f;
+        [SerializeField]
+        private float rollCooldown = 2f;
 
         #endregion
 
@@ -65,8 +72,12 @@ namespace Resources.Scripts.Player
         private float currentSlowMultiplier = 1f;
         private Coroutine slowCoroutine;
         private bool bonusActive;
-        private float initialDistance = -1f; // Изначальное расстояние от игрока до финиша.
+        private float initialDistance = -1f;
         private int darkSkullHitCount = 0;
+
+        private Vector2 lastMoveDirection = Vector2.right;
+        private bool isRolling = false;
+        private bool canRoll = true;
 
         #endregion
 
@@ -78,24 +89,24 @@ namespace Resources.Scripts.Player
             spriteRenderer = GetComponent<SpriteRenderer>();
 
             if (finishPoint != null)
-            {
                 initialDistance = Vector2.Distance(transform.position, finishPoint.position);
-            }
             else
-            {
                 StartCoroutine(WaitForFinishMarker());
-            }
         }
 
         private void Update()
         {
-            UpdateMovement();
+            if (!isRolling)
+                UpdateMovement();
+
             UpdateLightOuterRange();
+
+            if (Input.GetKeyDown(KeyCode.LeftShift) && canRoll && !isRolling)
+                StartCoroutine(RollCoroutine());
         }
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            // При столкновении с феей – уничтожаем её и восстанавливаем ману.
             if (other.CompareTag(ETag.Fairy.ToString()))
             {
                 FairyController fairy = other.GetComponent<FairyController>();
@@ -108,29 +119,25 @@ namespace Resources.Scripts.Player
 
         #region Movement Methods
 
-        /// <summary>
-        /// Обновляет перемещение игрока на основе входных данных.
-        /// Движение не выполняется, если активна карта лабиринта или зажата клавиша Space.
-        /// Также обновляются анимация и переворот спрайта.
-        /// </summary>
         private void UpdateMovement()
         {
             if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive) || Input.GetKey(KeyCode.Space))
                 return;
 
-            float horizontal = (joystick != null) ? joystick.Horizontal : Input.GetAxis("Horizontal");
-            float vertical   = (joystick != null) ? joystick.Vertical   : Input.GetAxis("Vertical");
-            float currentSpeed = ((joystick != null) ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
-            Vector2 movement = new Vector2(horizontal, vertical) * currentSpeed;
+            float horizontal = joystick != null ? joystick.Horizontal : Input.GetAxis("Horizontal");
+            float vertical = joystick != null ? joystick.Vertical : Input.GetAxis("Vertical");
 
-            // Перемещаем игрока.
+            Vector2 inputDirection = new Vector2(horizontal, vertical);
+            if (inputDirection.magnitude > 0.1f)
+                lastMoveDirection = inputDirection.normalized;
+
+            float currentSpeed = (joystick != null ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
+            Vector2 movement = inputDirection * currentSpeed;
+
             transform.Translate(movement * Time.deltaTime, Space.World);
 
-            // Обновляем состояние анимации и переворот спрайта.
-            if (Mathf.Approximately(horizontal, 0f) && Mathf.Approximately(vertical, 0f))
-            {
+            if (movement == Vector2.zero)
                 animator.Play(IdleAnimationName);
-            }
             else
             {
                 animator.Play(RunAnimationName);
@@ -140,11 +147,33 @@ namespace Resources.Scripts.Player
 
         #endregion
 
+        #region Dodge Roll
+
+        private IEnumerator RollCoroutine()
+        {
+            isRolling = true;
+            canRoll = false;
+
+            animator.Play(RollAnimationName);
+            Vector2 rollDirection = lastMoveDirection.normalized;
+            float timer = 0f;
+
+            while (timer < rollDuration)
+            {
+                transform.Translate(rollDirection * rollSpeed * Time.deltaTime);
+                timer += Time.deltaTime;
+                yield return null;
+            }
+
+            isRolling = false;
+            yield return new WaitForSeconds(rollCooldown);
+            canRoll = true;
+        }
+
+        #endregion
+
         #region Light Methods
 
-        /// <summary>
-        /// Обновляет внешний радиус освещения игрока в зависимости от расстояния до финиша.
-        /// </summary>
         private void UpdateLightOuterRange()
         {
             if (finishPoint != null && playerLight != null && initialDistance > 0)
@@ -160,9 +189,6 @@ namespace Resources.Scripts.Player
 
         #region Utility Methods
 
-        /// <summary>
-        /// Ожидает появления финишного маркера в сцене.
-        /// </summary>
         private IEnumerator WaitForFinishMarker()
         {
             while (finishPoint == null)
@@ -178,15 +204,11 @@ namespace Resources.Scripts.Player
             }
         }
 
-        /// <summary>
-        /// Обрабатывает смерть игрока, отключая все UI и уничтожая объект игрока.
-        /// </summary>
         private void Die()
         {
             foreach (Canvas canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
                 canvas.gameObject.SetActive(false);
-            }
+
             Destroy(gameObject);
         }
 
@@ -194,13 +216,9 @@ namespace Resources.Scripts.Player
 
         #region Damage and Effects
 
-        /// <summary>
-        /// Получает урон от врага и выполняет эффект отталкивания (dash), если активирован.
-        /// </summary>
-        /// <param name="enemy">Контроллер врага, нанесшего урон.</param>
         public void TakeDamage(EnemyController enemy)
         {
-            if (isImmortal)
+            if (isImmortal || isRolling)
                 return;
 
             EnemyStatsHandler enemyStats = enemy.GetComponent<EnemyStatsHandler>();
@@ -213,17 +231,9 @@ namespace Resources.Scripts.Player
             }
 
             if (enemy.pushPlayer)
-            {
-                // Отталкиваем игрока от врага.
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
-            }
         }
 
-        /// <summary>
-        /// Применяет эффект замедления движения игрока на заданное время.
-        /// </summary>
-        /// <param name="slowFactor">Множитель замедления.</param>
-        /// <param name="duration">Длительность эффекта.</param>
         public void ApplySlow(float slowFactor, float duration)
         {
             if (slowCoroutine != null)
@@ -238,11 +248,6 @@ namespace Resources.Scripts.Player
             currentSlowMultiplier = 1f;
         }
 
-        /// <summary>
-        /// Применяет эффект связывания (binding), который блокирует движение игрока на заданное время.
-        /// Используется, например, при попадании снаряда гоблина.
-        /// </summary>
-        /// <param name="duration">Длительность связывания в секундах.</param>
         public void ApplyBinding(float duration)
         {
             StartCoroutine(BindingCoroutine(duration));
@@ -252,17 +257,10 @@ namespace Resources.Scripts.Player
         {
             float originalMultiplier = currentSlowMultiplier;
             currentSlowMultiplier = 0f;
-            Debug.Log("Player bound for " + duration + " seconds.");
             yield return new WaitForSeconds(duration);
             currentSlowMultiplier = originalMultiplier;
-            Debug.Log("Player unbound.");
         }
 
-        /// <summary>
-        /// Оглушает игрока на заданное время, полностью блокируя его движение.
-        /// Например, при попадании в ловушку.
-        /// </summary>
-        /// <param name="duration">Длительность оглушения в секундах.</param>
         public void Stun(float duration)
         {
             StartCoroutine(StunCoroutine(duration));
@@ -272,16 +270,10 @@ namespace Resources.Scripts.Player
         {
             float originalMultiplier = currentSlowMultiplier;
             currentSlowMultiplier = 0f;
-            Debug.Log("Player stunned for " + duration + " seconds.");
             yield return new WaitForSeconds(duration);
             currentSlowMultiplier = originalMultiplier;
-            Debug.Log("Player stun ended.");
         }
 
-        /// <summary>
-        /// Увеличивает скорость игрока на заданное время.
-        /// </summary>
-        /// <param name="multiplier">Множитель скорости.</param>
         public void IncreaseSpeed(float multiplier)
         {
             if (bonusActive)
@@ -299,28 +291,24 @@ namespace Resources.Scripts.Player
             bonusActive = false;
         }
 
-        /// <summary>
-        /// Регистрирует попадание от врагов типа DarkSkull.
-        /// После достижения предельного количества ударов игрок умирает.
-        /// </summary>
         public void ReceiveDarkSkullHit()
         {
             darkSkullHitCount++;
-            Debug.Log("Received DarkSkull hit. Count: " + darkSkullHitCount);
             if (darkSkullHitCount >= maxDarkSkullHits)
-            {
                 Die();
-            }
         }
 
-        /// <summary>
-        /// Мгновенно убивает игрока при попадании от врагов типа Troll.
-        /// </summary>
         public void ReceiveTrollHit()
         {
-            Debug.Log("Received Troll hit. Player dies immediately.");
             Die();
         }
+        
+        public void TryRoll()
+        {
+            if (canRoll && !isRolling)
+                StartCoroutine(RollCoroutine());
+        }
+
 
         #endregion
     }
