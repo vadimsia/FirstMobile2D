@@ -186,7 +186,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2110,6 +2110,10 @@ MonoBehaviour:
   rightButton: {fileID: 1248588183}
   playButton: {fileID: 1812338950}
   closeButton: {fileID: 1264728533}
+  panelBackground: {fileID: 2129668421}
+  backgroundSprites:
+  - {fileID: 21300000, guid: db63954c8971cb0438ec734150ca09b5, type: 3}
+  - {fileID: 21300000, guid: 4dc35fc6fecab0b4ab63c41e66b4c1b1, type: 3}
   stages:
   - stageName: "\u042D\u0442\u0430\u043F 1"
     stageImage: {fileID: -1641492085303482191, guid: ba900a0ba71dbe741a56c36a582aff63, type: 3}
@@ -2143,7 +2147,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2eaf0b98d8b2cb74d9333e71809d4a2b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: db63954c8971cb0438ec734150ca09b5, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
