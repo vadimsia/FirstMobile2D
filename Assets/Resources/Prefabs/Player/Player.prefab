@@ -1342,6 +1342,9 @@ MonoBehaviour:
   stopTimeThreshold: 0.5
   minPointsForRecognition: 10
   minTotalPathLength: 1
+  manaSpendEffectPrefab: {fileID: 1084327597910860270, guid: f8bd385ff85ec514ea38a03e711982ba, type: 3}
+  manaBarUI: {fileID: 0}
+  mainCanvas: {fileID: 0}
   gestureRecognizer: {fileID: 0}
   resampleCount: 64
   smoothingWindow: 3

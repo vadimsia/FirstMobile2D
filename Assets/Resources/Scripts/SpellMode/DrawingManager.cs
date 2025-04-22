@@ -1,73 +1,88 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Resources.Scripts.Player; // Доступ к PlayerStatsHandler
+using Resources.Scripts.Player;      // Access to player stats
 using Resources.Scripts.SpellMode.Skills;
+using Resources.Scripts.UI;          // For ManaSpendEffect
 
 namespace Resources.Scripts.SpellMode
 {
+    /// <summary>
+    /// Manages gesture drawing, recognition, and execution of spell skills.
+    /// </summary>
     public class DrawingManager : MonoBehaviour
     {
+        #region Inspector Fields
+
         [Header("Start Mode")]
         [Tooltip("Drawing starts when the button is pressed.")]
-        public Button drawButton;
+        [SerializeField] private Button drawButton;
 
         [Header("UI Elements")]
-        public Text feedbackText;
+        [SerializeField] private Text feedbackText;
 
         [Header("Line Prefab")]
         [Tooltip("Prefab with a LineRenderer component for displaying the drawn line.")]
-        public GameObject drawingLinePrefab;
+        [SerializeField] private GameObject drawingLinePrefab;
 
         [Header("LineRenderer Settings")]
-        public Color drawingLineColor = Color.red;
-        public float drawingLineWidth = 0.1f;
-        public int drawingLineSortingOrder = 100;
+        [SerializeField] private Color drawingLineColor = Color.red;
+        [SerializeField] private float drawingLineWidth = 0.1f;
+        [SerializeField] private int drawingLineSortingOrder = 100;
 
         [Header("Drawing Settings")]
-        [Tooltip("Maximum drawing time (seconds)")]
-        public float maxDrawingTime = 5f;
-        [Tooltip("Minimum distance between points to be recorded")]
-        public float movementThreshold = 0.1f;
-        [Tooltip("Time without movement (seconds) after which the player is considered to have stopped")]
-        public float stopTimeThreshold = 0.5f;
-        [Tooltip("Minimum number of points required for gesture recognition")]
-        public int minPointsForRecognition = 10;
-        [Tooltip("Minimum total path length (in world units) for a valid sign")]
-        public float minTotalPathLength = 1.0f;
+        [Tooltip("Maximum drawing time in seconds.")]
+        [SerializeField] private float maxDrawingTime = 5f;
+        [Tooltip("Minimum distance between points to be recorded.")]
+        [SerializeField] private float movementThreshold = 0.1f;
+        [Tooltip("Time without movement after which the player is considered stopped.")]
+        [SerializeField] private float stopTimeThreshold = 0.5f;
+        [Tooltip("Minimum number of points required for recognition.")]
+        [SerializeField] private int minPointsForRecognition = 10;
+        [Tooltip("Minimum total path length for a valid gesture.")]
+        [SerializeField] private float minTotalPathLength = 1.0f;
+
+        [Header("Mana Spend FX")]
+        [SerializeField] private GameObject manaSpendEffectPrefab;
+        [SerializeField] private RectTransform manaBarUI;
+        [SerializeField] private Canvas mainCanvas;
 
         [Header("Recognition Settings")]
-        public IconGestureRecognizer gestureRecognizer;
-        public int resampleCount = 64;
-        public int smoothingWindow = 3;
+        [SerializeField] private IconGestureRecognizer gestureRecognizer;
+        [SerializeField] private int resampleCount = 64;
+        [SerializeField] private int smoothingWindow = 3;
 
         [Header("Player Stats")]
-        [Tooltip("Reference to the component managing the player's mana.")]
-        public PlayerStatsHandler playerStatsHandler;
+        [Tooltip("Reference to the component managing player's mana.")]
+        [SerializeField] private PlayerStatsHandler playerStatsHandler;
 
         [Header("Combo Settings")]
-        [Tooltip("Enable combo mode (multiple gestures in one drawing session)")]
-        public bool enableComboMode = true;
-        [Tooltip("Maximum time (seconds) allowed between individual gestures in a combo session")]
-        public float comboTimeWindow = 3f;
+        [Tooltip("Allow multiple gestures in one drawing session.")]
+        [SerializeField] private bool enableComboMode = true;
+        [Tooltip("Maximum time allowed between gestures in a combo session.")]
+        [SerializeField] private float comboTimeWindow = 3f;
 
-        // Internal variables
+        #endregion
+
+        #region Private State
+
         private bool isDrawing;
         private float drawingTimer;
         private float noMovementTimer;
+        private float comboTimer;
+
         private Vector3 lastRecordedPosition;
-        private List<Vector3> drawnPoints = new List<Vector3>();
+        private readonly List<Vector3> drawnPoints = new List<Vector3>();
         private LineRenderer currentLine;
         private bool hasMoved;
 
-        // Накопление распознанных знаков (комбо)
-        private List<SignTemplateIcon> recognizedSigns = new List<SignTemplateIcon>();
-        private float comboTimer;
+        private readonly List<SignTemplateIcon> recognizedSigns = new List<SignTemplateIcon>();
 
-        // Накопление затраченной маны за сессию
-        private float totalManaUsed;
+        #endregion
 
-        void Start()
+        #region Unity Callbacks
+
+        private void Start()
         {
             if (drawButton != null)
                 drawButton.onClick.AddListener(StartDrawing);
@@ -75,16 +90,16 @@ namespace Resources.Scripts.SpellMode
             lastRecordedPosition = transform.position;
         }
 
-        void Update()
+        private void Update()
         {
             if (!isDrawing)
                 return;
 
             drawingTimer += Time.deltaTime;
             Vector3 currentPos = transform.position;
-            float distanceSinceLast = Vector3.Distance(currentPos, lastRecordedPosition);
+            float distance = Vector3.Distance(currentPos, lastRecordedPosition);
 
-            if (distanceSinceLast >= movementThreshold)
+            if (distance >= movementThreshold)
             {
                 noMovementTimer = 0f;
                 hasMoved = true;
@@ -96,34 +111,40 @@ namespace Resources.Scripts.SpellMode
             {
                 noMovementTimer += Time.deltaTime;
 
-                if (enableComboMode && hasMoved && noMovementTimer >= stopTimeThreshold)
+                if (hasMoved && noMovementTimer >= stopTimeThreshold)
                 {
-                    ProcessPartialDrawing();
-                    noMovementTimer = 0f;
-                    drawnPoints.Clear();
-                }
-                else if (!enableComboMode && hasMoved && noMovementTimer >= stopTimeThreshold)
-                {
-                    EndDrawing();
-                    return;
+                    if (enableComboMode)
+                    {
+                        ProcessPartialDrawing();
+                        drawnPoints.Clear();
+                        noMovementTimer = 0f;
+                    }
+                    else
+                    {
+                        EndDrawing();
+                        return;
+                    }
                 }
             }
 
             if (drawingTimer >= maxDrawingTime)
-            {
                 EndDrawing();
-            }
 
             if (recognizedSigns.Count > 0)
             {
                 comboTimer += Time.deltaTime;
                 if (comboTimer >= comboTimeWindow)
-                {
                     EndDrawing();
-                }
             }
         }
 
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Initializes drawing session.
+        /// </summary>
         public void StartDrawing()
         {
             if (currentLine != null)
@@ -133,19 +154,17 @@ namespace Resources.Scripts.SpellMode
             }
 
             isDrawing = true;
-            drawingTimer = 0f;
-            noMovementTimer = 0f;
-            comboTimer = 0f;
+            drawingTimer = noMovementTimer = comboTimer = 0f;
             hasMoved = false;
             drawnPoints.Clear();
             recognizedSigns.Clear();
-            totalManaUsed = 0f;
+
             lastRecordedPosition = transform.position;
             drawnPoints.Add(lastRecordedPosition);
 
             if (drawingLinePrefab != null)
             {
-                GameObject lineObj = Instantiate(drawingLinePrefab, Vector3.zero, Quaternion.identity);
+                GameObject lineObj = Instantiate(drawingLinePrefab);
                 currentLine = lineObj.GetComponent<LineRenderer>();
                 if (currentLine != null)
                 {
@@ -158,16 +177,23 @@ namespace Resources.Scripts.SpellMode
                     currentLine.positionCount = 1;
                     currentLine.SetPosition(0, lastRecordedPosition);
                 }
+                else
+                {
+                    Debug.LogError("[DrawingManager] drawingLinePrefab has no LineRenderer!");
+                }
             }
             else
             {
-                Debug.LogError("drawingLinePrefab is not assigned!");
+                Debug.LogError("[DrawingManager] drawingLinePrefab is not assigned.");
             }
 
             if (feedbackText != null)
                 feedbackText.text = "Drawing...";
         }
 
+        /// <summary>
+        /// Finalizes drawing session and executes recognized skills.
+        /// </summary>
         public void EndDrawing()
         {
             if (!isDrawing)
@@ -189,19 +215,39 @@ namespace Resources.Scripts.SpellMode
 
             bool isCombo = recognizedSigns.Count >= 2;
 
-            foreach (SignTemplateIcon template in recognizedSigns)
-                ExecuteSkill(template, isCombo);
+            // 1) Sum up all mana costs
+            int totalManaCost = 0;
+            foreach (var template in recognizedSigns)
+                totalManaCost += Mathf.RoundToInt(template.manaCost);
 
-            if (feedbackText != null)
+            Debug.Log($"[DrawingManager] Attempt to spend {totalManaCost} mana");
+
+            // 2) Consume and spawn the FX
+            if (playerStatsHandler != null && playerStatsHandler.UseMana(totalManaCost))
             {
-                string baseMessage = isCombo ? "Combo Skill Activated!" : "Skill Activated!";
-                feedbackText.text = $"{baseMessage} Used {totalManaUsed:F0} mana.";
+                ShowManaSpendEffect(totalManaCost);
+
+                // 3) Spawn each skill effect
+                foreach (var template in recognizedSigns)
+                    ExecuteSkill(template, isCombo);
+
+                if (feedbackText != null)
+                    feedbackText.text = isCombo ? "Combo Skill Activated!" : "Skill Activated!";
+            }
+            else
+            {
+                if (feedbackText != null)
+                    feedbackText.text = "Not enough mana";
             }
 
             recognizedSigns.Clear();
             drawnPoints.Clear();
             comboTimer = 0f;
         }
+
+        #endregion
+
+        #region Private Methods
 
         private void ProcessPartialDrawing()
         {
@@ -215,70 +261,43 @@ namespace Resources.Scripts.SpellMode
             if (totalLength < minTotalPathLength)
                 return;
 
-            List<Vector2> points2D = new List<Vector2>();
-            foreach (Vector3 pt in drawnPoints)
+            var points2D = new List<Vector2>(drawnPoints.Count);
+            foreach (var pt in drawnPoints)
                 points2D.Add(new Vector2(pt.x, pt.y));
 
-            List<Vector2> normalizedInput = GestureUtils.NormalizePoints(points2D, resampleCount, smoothingWindow);
-            Debug.Log("Normalized Input: " + Vector2ListToString(normalizedInput));
+            var normalized = GestureUtils.NormalizePoints(points2D, resampleCount, smoothingWindow);
+            Debug.Log($"Normalized Input: {Vector2ListToString(normalized)}");
 
-            SignTemplateIcon recognized = gestureRecognizer.Recognize(normalizedInput);
+            var recognized = gestureRecognizer.Recognize(normalized);
             if (recognized != null)
             {
                 recognizedSigns.Add(recognized);
                 comboTimer = 0f;
                 if (feedbackText != null)
-                    feedbackText.text = "Added: " + recognized.id;
+                    feedbackText.text = $"Added: {recognized.id}";
             }
         }
 
         private void ExecuteSkill(SignTemplateIcon template, bool isCombo)
         {
-            if (playerStatsHandler != null)
-            {
-                if (!playerStatsHandler.UseMana(template.manaCost))
-                {
-                    if (feedbackText != null)
-                        feedbackText.text = "Not enough mana";
-                    return;
-                }
-                totalManaUsed += template.manaCost;
-                Debug.Log($"Used {template.manaCost:F0} mana for {template.id}");
-            }
+            if (template.skillPrefab == null)
+                return;
 
-            if (template.skillPrefab != null)
-            {
-                GameObject skillObj = Instantiate(template.skillPrefab, transform.position, Quaternion.identity);
-                if (isCombo)
-                {
-                    SkillBase skillComponent = skillObj.GetComponent<SkillBase>();
-                    if (skillComponent != null)
-                    {
-                        if (template.id.ToLower().Contains("circle"))
-                        {
-                            PushEnemiesSkill pushSkill = skillComponent as PushEnemiesSkill;
-                            if (pushSkill != null)
-                                pushSkill.pushForce *= 1.5f;
-                        }
-                        else if (template.id.ToLower().Contains("square"))
-                        {
-                            SlowEnemiesSkill slowSkill = skillComponent as SlowEnemiesSkill;
-                            if (slowSkill != null)
-                                slowSkill.slowDuration *= 1.5f;
-                        }
-                        else if (template.id.ToLower().Contains("triangle"))
-                        {
-                            SpeedBoostSkill speedSkill = skillComponent as SpeedBoostSkill;
-                            if (speedSkill != null)
-                                speedSkill.boostDuration += 50f;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogWarning("SkillPrefab not assigned for sign " + template.id);
-            }
+            var skillObj = Instantiate(template.skillPrefab, transform.position, Quaternion.identity);
+            if (!isCombo)
+                return;
+
+            var skillComp = skillObj.GetComponent<SkillBase>();
+            if (skillComp == null)
+                return;
+
+            string idLower = template.id.ToLower();
+            if (idLower.Contains("circle") && skillComp is PushEnemiesSkill push)
+                push.pushForce *= 1.5f;
+            else if (idLower.Contains("square") && skillComp is SlowEnemiesSkill slow)
+                slow.slowDuration *= 1.5f;
+            else if (idLower.Contains("triangle") && skillComp is SpeedBoostSkill speed)
+                speed.boostDuration += 50f;
         }
 
         private void UpdateDrawingLine()
@@ -291,12 +310,62 @@ namespace Resources.Scripts.SpellMode
                 currentLine.SetPosition(i, drawnPoints[i]);
         }
 
+        /// <summary>
+        /// Spawns the floating "-XX" and sends it toward the mana bar.
+        /// </summary>
+        private void ShowManaSpendEffect(int amount)
+        {
+            Debug.Log("[DrawingManager] Instantiating ManaSpendEffect");
+
+            if (manaSpendEffectPrefab == null)
+            {
+                Debug.LogError("[DrawingManager] manaSpendEffectPrefab is not assigned!");
+                return;
+            }
+
+            if (mainCanvas == null)
+            {
+                mainCanvas = FindObjectOfType<Canvas>();
+                if (mainCanvas == null)
+                {
+                    Debug.LogError("[DrawingManager] Could not find any Canvas in the scene!");
+                    return;
+                }
+            }
+
+            if (manaBarUI == null)
+            {
+                Debug.LogError("[DrawingManager] manaBarUI is not assigned!");
+                return;
+            }
+
+            var effectGo = Instantiate(
+                manaSpendEffectPrefab,
+                mainCanvas.transform,
+                worldPositionStays: false
+            );
+            effectGo.transform.localScale = Vector3.one;
+
+            var effect = effectGo.GetComponent<ManaSpendEffect>();
+            if (effect != null)
+            {
+                effect.Initialize(amount, transform.position, manaBarUI);
+            }
+            else
+            {
+                Debug.LogError("[DrawingManager] Prefab does not contain a ManaSpendEffect component!");
+            }
+        }
+
+
         private string Vector2ListToString(List<Vector2> points)
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach (Vector2 p in points)
+            var sb = new System.Text.StringBuilder();
+            foreach (var p in points)
                 sb.AppendFormat("({0:F2}, {1:F2}) ", p.x, p.y);
             return sb.ToString();
         }
+
+        #endregion
     }
 }

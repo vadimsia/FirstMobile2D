@@ -35,17 +35,10 @@ MonoBehaviour:
     maxCount: 15
     minScale: 0.5
     maxScale: 0.5
-  - obstacleName: Bush
-    obstaclePrefab: {fileID: 869883721712576763, guid: f3de8a1d8df4ff8438a507246e032db6, type: 3}
-    spawnProbability: 1
-    minCount: 10
-    maxCount: 15
-    minScale: 0.3
-    maxScale: 0.3
-  obstacleMinDistance: 3
+  obstacleMinDistance: 1
   plantTreesAtEdges: 1
-  edgeForestThickness: 1
+  edgeForestThickness: 2
   edgeTreesPerSide: 100
-  edgeTreeScaleRange: {x: 0.5, y: 0.8}
-  edgeTreeJitterRange: {x: 2, y: 2}
+  edgeTreeScaleRange: {x: 0.3, y: 0.4}
+  edgeTreeJitterRange: {x: 1, y: 1}
   disableEdgeTreeColliders: 1
