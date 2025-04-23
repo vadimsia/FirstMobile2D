@@ -25,50 +25,37 @@ namespace Resources.Scripts.Player
         #region Inspector Fields
 
         [Header("Movement Settings")]
-        [SerializeField, Range(1, 10)]
-        private float keyboardSpeed = 3f;
-        [SerializeField, Range(1, 10)]
-        private float joystickSpeed = 3f;
-        [SerializeField]
-        private PlayerJoystick joystick;
-        [SerializeField]
-        private GameObject trapPrefab;
+        [SerializeField, Range(1, 10)] private float keyboardSpeed = 3f;
+        [SerializeField, Range(1, 10)] private float joystickSpeed = 3f;
+        [SerializeField] private PlayerJoystick joystick;
+        [SerializeField] private GameObject trapPrefab;
 
         [Header("Light Settings")]
-        [SerializeField]
-        private Light2D playerLight;
-        [SerializeField]
-        private Transform finishPoint;
-        [SerializeField, Range(0.1f, 5f)]
-        private float baseLightRange = 1f;
-        [SerializeField, Range(1f, 2f)]
-        private float maxLightRange = 2f;
+        [SerializeField] private Light2D playerLight;
+        [SerializeField] private Transform finishPoint;
+        [SerializeField, Range(0.1f, 5f)] private float baseLightRange = 1f;
+        [SerializeField, Range(1f, 2f)] private float maxLightRange = 2f;
 
-        [Header("Player Settings")]
-        public bool isImmortal;
+        [Header("Player Settings")] public bool isImmortal;
 
         [Header("Animation Settings")]
-        [SerializeField]
-        private Animator animator;
+        [SerializeField] private Animator animator;
+        [SerializeField] private SpriteRenderer spriteRenderer;
+        [SerializeField] private Sprite rollSprite; // Sprite for the roll pose
 
         [Header("DarkSkull / Troll Damage Settings")]
-        [SerializeField]
-        private int maxDarkSkullHits = 2;
+        [SerializeField] private int maxDarkSkullHits = 2;
 
         [Header("Dodge Roll Settings")]
-        [SerializeField]
-        private float rollSpeed = 6f;
-        [SerializeField]
-        private float rollDuration = 0.3f;
-        [SerializeField]
-        private float rollCooldown = 2f;
+        [SerializeField] private float rollSpeed = 6f;
+        [SerializeField] private float rollDuration = 0.3f;
+        [SerializeField] private float rollCooldown = 2f;
 
         #endregion
 
         #region Private Fields
 
         private PlayerStatsHandler playerStats;
-        private SpriteRenderer spriteRenderer;
         private float currentSlowMultiplier = 1f;
         private Coroutine slowCoroutine;
         private bool bonusActive;
@@ -78,6 +65,7 @@ namespace Resources.Scripts.Player
         private Vector2 lastMoveDirection = Vector2.right;
         private bool isRolling = false;
         private bool canRoll = true;
+        private Sprite originalSprite;
 
         #endregion
 
@@ -86,7 +74,7 @@ namespace Resources.Scripts.Player
         private void Start()
         {
             playerStats = GetComponent<PlayerStatsHandler>();
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
 
             if (finishPoint != null)
                 initialDistance = Vector2.Distance(transform.position, finishPoint.position);
@@ -154,16 +142,34 @@ namespace Resources.Scripts.Player
             isRolling = true;
             canRoll = false;
 
-            animator.Play(RollAnimationName);
+            // Disable animator to prevent other animations from overriding roll sprite
+            animator.enabled = false;
+
+            // Store original sprite and assign roll sprite
+            originalSprite = spriteRenderer.sprite;
+            spriteRenderer.sprite = rollSprite;
+
             Vector2 rollDirection = lastMoveDirection.normalized;
             float timer = 0f;
 
+            // Determine rotation direction based on roll direction
+            float rotationSign = rollDirection.x >= 0 ? -1f : 1f;
+            float rotationSpeed = 360f / rollDuration * rotationSign;
+
             while (timer < rollDuration)
             {
-                transform.Translate(rollDirection * rollSpeed * Time.deltaTime);
+                transform.Translate(rollDirection * rollSpeed * Time.deltaTime, Space.World);
+                transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
                 timer += Time.deltaTime;
                 yield return null;
             }
+
+            // Reset sprite and rotation
+            spriteRenderer.sprite = originalSprite;
+            transform.rotation = Quaternion.identity;
+
+            // Re-enable animator
+            animator.enabled = true;
 
             isRolling = false;
             yield return new WaitForSeconds(rollCooldown);
@@ -308,7 +314,6 @@ namespace Resources.Scripts.Player
             if (canRoll && !isRolling)
                 StartCoroutine(RollCoroutine());
         }
-
 
         #endregion
     }
