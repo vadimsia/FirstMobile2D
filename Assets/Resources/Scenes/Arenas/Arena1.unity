@@ -13139,7 +13139,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 0}
+  m_TargetGraphic: {fileID: 885155170}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
@@ -13969,6 +13969,18 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 543103349}
     - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: rollSpeed
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: rollSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e6c083e109074e040b89e6b627246fbf, type: 3}
+    - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: rollDuration
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: joystickSpeed
       value: 2
       objectReference: {fileID: 0}
@@ -13976,6 +13988,10 @@ PrefabInstance:
       propertyPath: keyboardSpeed
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: spriteRenderer
+      value: 
+      objectReference: {fileID: 1964511366}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -13997,6 +14013,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae4878589b7a14708bf25b0e2d6d9512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!212 &1964511366 stripped
+SpriteRenderer:
+  m_CorrespondingSourceObject: {fileID: 2992285719649780434, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+  m_PrefabInstance: {fileID: 1964511363}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &1964511370 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
