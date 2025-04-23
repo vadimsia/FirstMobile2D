@@ -143,7 +143,7 @@ namespace Resources.Scripts.SpellMode
         #region Public Methods
 
         /// <summary>
-        /// Initializes drawing session.
+        /// Initializes the drawing session.
         /// </summary>
         public void StartDrawing()
         {
@@ -192,7 +192,7 @@ namespace Resources.Scripts.SpellMode
         }
 
         /// <summary>
-        /// Finalizes drawing session and executes recognized skills.
+        /// Finalizes the drawing session and executes recognized skills.
         /// </summary>
         public void EndDrawing()
         {
@@ -312,6 +312,7 @@ namespace Resources.Scripts.SpellMode
 
         /// <summary>
         /// Spawns the floating "-XX" and sends it toward the mana bar.
+        /// Uses the new FindFirstObjectByType API instead of the deprecated FindObjectOfType.
         /// </summary>
         private void ShowManaSpendEffect(int amount)
         {
@@ -323,9 +324,10 @@ namespace Resources.Scripts.SpellMode
                 return;
             }
 
+            // Use the newer, non-deprecated API to find a Canvas in the scene
             if (mainCanvas == null)
             {
-                mainCanvas = FindObjectOfType<Canvas>();
+                mainCanvas = Object.FindFirstObjectByType<Canvas>();
                 if (mainCanvas == null)
                 {
                     Debug.LogError("[DrawingManager] Could not find any Canvas in the scene!");
@@ -357,7 +359,9 @@ namespace Resources.Scripts.SpellMode
             }
         }
 
-
+        /// <summary>
+        /// Converts a list of Vector2 points to a readable string.
+        /// </summary>
         private string Vector2ListToString(List<Vector2> points)
         {
             var sb = new System.Text.StringBuilder();

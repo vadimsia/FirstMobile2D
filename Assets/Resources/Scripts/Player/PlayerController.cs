@@ -18,7 +18,7 @@ namespace Resources.Scripts.Player
 
         private const string IdleAnimationName = "Idle";
         private const string RunAnimationName = "Run";
-        private const string RollAnimationName = "Roll";
+        
 
         #endregion
 
@@ -60,10 +60,11 @@ namespace Resources.Scripts.Player
         private Coroutine slowCoroutine;
         private bool bonusActive;
         private float initialDistance = -1f;
-        private int darkSkullHitCount = 0;
+        private int darkSkullHitCount;
 
-        private Vector2 lastMoveDirection = Vector2.right;
-        private bool isRolling = false;
+        // Default roll direction when no movement: left
+        private Vector2 lastMoveDirection = Vector2.left;
+        private bool isRolling;
         private bool canRoll = true;
         private Sprite originalSprite;
 
