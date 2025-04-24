@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Rendering.Universal;
 using Resources.Scripts.Data;
 
 namespace Resources.Scripts.Labyrinth

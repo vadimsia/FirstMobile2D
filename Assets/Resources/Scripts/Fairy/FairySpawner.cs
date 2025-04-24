@@ -20,13 +20,13 @@ namespace Resources.Scripts.Fairy
         [SerializeField, Range(1f, 30f), Tooltip("Time interval between spawns in seconds.")]
         private float spawnInterval = 5f;
         [SerializeField, Tooltip("Radius of the spawn area offset. Set to 0 for fixed spawn position.")]
-        private float spawnAreaRadius = 0f;
+        private float spawnAreaRadius;
         [SerializeField, Tooltip("Enable random spawn positions within the defined spawn area.")]
-        private bool randomizeSpawnPosition = false;
+        private bool randomizeSpawnPosition;
 
         [Header("Debug Settings")]
         [SerializeField, Tooltip("Enable debug logging for fairy spawning.")]
-        private bool debugLog = false;
+        private bool debugLog;
 
         private float timer;
 

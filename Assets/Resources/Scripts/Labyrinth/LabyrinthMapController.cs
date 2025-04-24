@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Resources.Scripts.Labyrinth
@@ -26,7 +25,7 @@ namespace Resources.Scripts.Labyrinth
         [SerializeField, Tooltip("Total time (in seconds) before the map automatically closes.")]
         private float toggleDuration = 100f;
         [SerializeField, Tooltip("Enable debug logging for the minimap controller.")]
-        private bool debugLog = false;
+        private bool debugLog;
 
         [Header("Timer Texts")]
         [SerializeField, Tooltip("Text displayed on the map panel for countdown.")]

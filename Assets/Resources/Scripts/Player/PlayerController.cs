@@ -1,4 +1,6 @@
+// Resources/Scripts/Player/PlayerController.cs
 using UnityEngine;
+using System;
 using System.Collections;
 using Resources.Scripts.Enemy;
 using Resources.Scripts.Fairy;
@@ -10,7 +12,7 @@ namespace Resources.Scripts.Player
 {
     /// <summary>
     /// Controls player movement, interactions, dynamic light range based on proximity to the finish point,
-    /// handles animation switching and dodge roll functionality.
+    /// handles animation switching and dodge roll functionality with cooldown.
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
@@ -18,7 +20,6 @@ namespace Resources.Scripts.Player
 
         private const string IdleAnimationName = "Idle";
         private const string RunAnimationName = "Run";
-        
 
         #endregion
 
@@ -36,20 +37,31 @@ namespace Resources.Scripts.Player
         [SerializeField, Range(0.1f, 5f)] private float baseLightRange = 1f;
         [SerializeField, Range(1f, 2f)] private float maxLightRange = 2f;
 
-        [Header("Player Settings")] public bool isImmortal;
+        [Header("Player Settings")]
+        public bool isImmortal;
 
         [Header("Animation Settings")]
         [SerializeField] private Animator animator;
         [SerializeField] private SpriteRenderer spriteRenderer;
-        [SerializeField] private Sprite rollSprite; // Sprite for the roll pose
+        [SerializeField] private Sprite rollSprite;
 
         [Header("DarkSkull / Troll Damage Settings")]
         [SerializeField] private int maxDarkSkullHits = 2;
 
         [Header("Dodge Roll Settings")]
-        [SerializeField] private float rollSpeed = 6f;
-        [SerializeField] private float rollDuration = 0.3f;
-        [SerializeField] private float rollCooldown = 2f;
+        [SerializeField, Tooltip("Скорость кувырка")] private float rollSpeed = 6f;
+        [SerializeField, Tooltip("Длительность кувырка (сек)")] private float rollDuration = 0.3f;
+        [SerializeField, Tooltip("Кулдаун между кувырками (сек)")] private float rollCooldown = 2f;
+
+        #endregion
+
+        #region Public Events & Properties
+
+        /// <summary>Нормализованное значение (0–1) оставшегося кулдауна кувырка</summary>
+        public event Action<float> OnRollCooldownChanged;
+
+        /// <summary>Длительность кулдауна для UI</summary>
+        public float RollCooldownDuration => rollCooldown;
 
         #endregion
 
@@ -62,11 +74,12 @@ namespace Resources.Scripts.Player
         private float initialDistance = -1f;
         private int darkSkullHitCount;
 
-        // Default roll direction when no movement: left
         private Vector2 lastMoveDirection = Vector2.left;
         private bool isRolling;
         private bool canRoll = true;
         private Sprite originalSprite;
+
+        private float rollCooldownRemaining;
 
         #endregion
 
@@ -89,16 +102,18 @@ namespace Resources.Scripts.Player
                 UpdateMovement();
 
             UpdateLightOuterRange();
+            TickRollCooldown();
 
-            if (Input.GetKeyDown(KeyCode.LeftShift) && canRoll && !isRolling)
-                StartCoroutine(RollCoroutine());
+            // Клавиша для теста кувырка
+            if (Input.GetKeyDown(KeyCode.LeftShift))
+                TryRoll();
         }
 
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (other.CompareTag(ETag.Fairy.ToString()))
             {
-                FairyController fairy = other.GetComponent<FairyController>();
+                var fairy = other.GetComponent<FairyController>();
                 fairy?.DestroyFairy();
                 playerStats.RestoreMana(20f);
             }
@@ -110,27 +125,28 @@ namespace Resources.Scripts.Player
 
         private void UpdateMovement()
         {
-            if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive) || Input.GetKey(KeyCode.Space))
+            if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
+                || Input.GetKey(KeyCode.Space))
                 return;
 
-            float horizontal = joystick != null ? joystick.Horizontal : Input.GetAxis("Horizontal");
-            float vertical = joystick != null ? joystick.Vertical : Input.GetAxis("Vertical");
+            float h = joystick != null ? joystick.Horizontal : Input.GetAxis("Horizontal");
+            float v = joystick != null ? joystick.Vertical : Input.GetAxis("Vertical");
 
-            Vector2 inputDirection = new Vector2(horizontal, vertical);
-            if (inputDirection.magnitude > 0.1f)
-                lastMoveDirection = inputDirection.normalized;
+            Vector2 dir = new Vector2(h, v);
+            if (dir.magnitude > 0.1f)
+                lastMoveDirection = dir.normalized;
 
-            float currentSpeed = (joystick != null ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
-            Vector2 movement = inputDirection * currentSpeed;
+            float speed = (joystick != null ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
+            float delta = speed * Time.deltaTime;              // multiply floats first for efficiency
+            Vector2 move = dir * delta;
+            transform.Translate(move, Space.World);
 
-            transform.Translate(movement * Time.deltaTime, Space.World);
-
-            if (movement == Vector2.zero)
+            if (move == Vector2.zero)
                 animator.Play(IdleAnimationName);
             else
             {
                 animator.Play(RunAnimationName);
-                spriteRenderer.flipX = horizontal > 0f;
+                spriteRenderer.flipX = h > 0f;
             }
         }
 
@@ -138,43 +154,59 @@ namespace Resources.Scripts.Player
 
         #region Dodge Roll
 
+        /// <summary>Публичный метод для вызова кувырка (из UI или кода)</summary>
+        public void TryRoll()
+        {
+            if (!canRoll || isRolling) return;
+            StartCoroutine(RollCoroutine());
+        }
+
         private IEnumerator RollCoroutine()
         {
             isRolling = true;
             canRoll = false;
 
-            // Disable animator to prevent other animations from overriding roll sprite
-            animator.enabled = false;
+            // Инициализируем кулдаун
+            rollCooldownRemaining = rollCooldown;
+            OnRollCooldownChanged?.Invoke(1f);
 
-            // Store original sprite and assign roll sprite
+            // Смена спрайта и блокировка аниматора
+            animator.enabled = false;
             originalSprite = spriteRenderer.sprite;
             spriteRenderer.sprite = rollSprite;
 
-            Vector2 rollDirection = lastMoveDirection.normalized;
-            float timer = 0f;
+            Vector2 dir = lastMoveDirection.normalized;
+            float rotSign = dir.x >= 0 ? -1f : 1f;
+            float rotSpeed = 360f / rollDuration * rotSign;
 
-            // Determine rotation direction based on roll direction
-            float rotationSign = rollDirection.x >= 0 ? -1f : 1f;
-            float rotationSpeed = 360f / rollDuration * rotationSign;
-
-            while (timer < rollDuration)
+            float t = 0f;
+            while (t < rollDuration)
             {
-                transform.Translate(rollDirection * rollSpeed * Time.deltaTime, Space.World);
-                transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
-                timer += Time.deltaTime;
+                float rollDelta = rollSpeed * Time.deltaTime;      // multiply floats first for efficiency
+                transform.Translate(dir * rollDelta, Space.World);
+                transform.Rotate(0f, 0f, rotSpeed * Time.deltaTime);
+                t += Time.deltaTime;
                 yield return null;
             }
 
-            // Reset sprite and rotation
+            // Сброс состояния
             spriteRenderer.sprite = originalSprite;
             transform.rotation = Quaternion.identity;
-
-            // Re-enable animator
             animator.enabled = true;
-
             isRolling = false;
-            yield return new WaitForSeconds(rollCooldown);
+
+            // Ждём окончания оставшегося кулдауна
+            yield return new WaitForSeconds(rollCooldownRemaining);
             canRoll = true;
+        }
+
+        private void TickRollCooldown()
+        {
+            if (rollCooldownRemaining <= 0f) return;
+
+            rollCooldownRemaining -= Time.deltaTime;
+            if (rollCooldownRemaining < 0f) rollCooldownRemaining = 0f;
+            OnRollCooldownChanged?.Invoke(rollCooldownRemaining / rollCooldown);
         }
 
         #endregion
@@ -183,40 +215,24 @@ namespace Resources.Scripts.Player
 
         private void UpdateLightOuterRange()
         {
-            if (finishPoint != null && playerLight != null && initialDistance > 0)
-            {
-                float currentDistance = Vector2.Distance(transform.position, finishPoint.position);
-                float t = 1f - Mathf.Clamp01(currentDistance / initialDistance);
-                float outerRange = Mathf.Lerp(baseLightRange, maxLightRange, t);
-                playerLight.pointLightOuterRadius = outerRange;
-            }
+            if (finishPoint == null || playerLight == null || initialDistance <= 0f) return;
+            float dist = Vector2.Distance(transform.position, finishPoint.position);
+            float t = 1f - Mathf.Clamp01(dist / initialDistance);
+            playerLight.pointLightOuterRadius = Mathf.Lerp(baseLightRange, maxLightRange, t);
         }
-
-        #endregion
-
-        #region Utility Methods
 
         private IEnumerator WaitForFinishMarker()
         {
             while (finishPoint == null)
             {
-                GameObject finishObj = GameObject.FindGameObjectWithTag(ETag.Fairy.ToString());
-                if (finishObj != null)
+                var obj = GameObject.FindGameObjectWithTag(ETag.Fairy.ToString());
+                if (obj != null)
                 {
-                    finishPoint = finishObj.transform;
-                    Debug.Log("Finish marker found: " + finishPoint.name);
+                    finishPoint = obj.transform;
                     initialDistance = Vector2.Distance(transform.position, finishPoint.position);
                 }
                 yield return null;
             }
-        }
-
-        private void Die()
-        {
-            foreach (Canvas canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                canvas.gameObject.SetActive(false);
-
-            Destroy(gameObject);
         }
 
         #endregion
@@ -225,95 +241,79 @@ namespace Resources.Scripts.Player
 
         public void TakeDamage(EnemyController enemy)
         {
-            if (isImmortal || isRolling)
-                return;
-
-            EnemyStatsHandler enemyStats = enemy.GetComponent<EnemyStatsHandler>();
-            playerStats.Health -= enemyStats.Damage;
-
-            if (playerStats.Health <= 0)
-            {
-                Die();
-                return;
-            }
-
+            if (isImmortal || isRolling) return;
+            var stats = enemy.GetComponent<EnemyStatsHandler>();
+            playerStats.Health -= stats.Damage;
+            if (playerStats.Health <= 0) { Die(); return; }
             if (enemy.pushPlayer)
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
         }
 
-        public void ApplySlow(float slowFactor, float duration)
+        public void ApplySlow(float factor, float duration)
         {
-            if (slowCoroutine != null)
-                StopCoroutine(slowCoroutine);
-            slowCoroutine = StartCoroutine(SlowEffectCoroutine(slowFactor, duration));
+            if (slowCoroutine != null) StopCoroutine(slowCoroutine);
+            slowCoroutine = StartCoroutine(SlowCoroutine(factor, duration));
         }
 
-        private IEnumerator SlowEffectCoroutine(float slowFactor, float duration)
+        private IEnumerator SlowCoroutine(float factor, float duration)
         {
-            currentSlowMultiplier = slowFactor;
+            currentSlowMultiplier = factor;
             yield return new WaitForSeconds(duration);
             currentSlowMultiplier = 1f;
         }
 
-        public void ApplyBinding(float duration)
-        {
-            StartCoroutine(BindingCoroutine(duration));
-        }
-
+        public void ApplyBinding(float duration) => StartCoroutine(BindingCoroutine(duration));
         private IEnumerator BindingCoroutine(float duration)
         {
-            float originalMultiplier = currentSlowMultiplier;
+            float orig = currentSlowMultiplier;
             currentSlowMultiplier = 0f;
             yield return new WaitForSeconds(duration);
-            currentSlowMultiplier = originalMultiplier;
+            currentSlowMultiplier = orig;
         }
 
-        public void Stun(float duration)
-        {
-            StartCoroutine(StunCoroutine(duration));
-        }
-
+        public void Stun(float duration) => StartCoroutine(StunCoroutine(duration));
         private IEnumerator StunCoroutine(float duration)
         {
-            float originalMultiplier = currentSlowMultiplier;
+            float orig = currentSlowMultiplier;
             currentSlowMultiplier = 0f;
             yield return new WaitForSeconds(duration);
-            currentSlowMultiplier = originalMultiplier;
+            currentSlowMultiplier = orig;
         }
 
-        public void IncreaseSpeed(float multiplier)
+        public void IncreaseSpeed(float mult)
         {
-            if (bonusActive)
-                return;
-            StartCoroutine(IncreaseSpeedCoroutine(multiplier, 5f));
+            if (bonusActive) return;
+            StartCoroutine(SpeedBoostCoroutine(mult, 5f));
         }
 
-        private IEnumerator IncreaseSpeedCoroutine(float multiplier, float duration)
+        private IEnumerator SpeedBoostCoroutine(float mult, float duration)
         {
             bonusActive = true;
-            float originalJoystickSpeed = joystickSpeed;
-            joystickSpeed *= multiplier;
+            float orig = joystickSpeed;
+            joystickSpeed *= mult;
             yield return new WaitForSeconds(duration);
-            joystickSpeed = originalJoystickSpeed;
+            joystickSpeed = orig;
             bonusActive = false;
         }
 
         public void ReceiveDarkSkullHit()
         {
             darkSkullHitCount++;
-            if (darkSkullHitCount >= maxDarkSkullHits)
-                Die();
+            if (darkSkullHitCount >= maxDarkSkullHits) Die();
         }
 
-        public void ReceiveTrollHit()
+        public void ReceiveTrollHit() => Die();
+
+        private void Die()
         {
-            Die();
-        }
-        
-        public void TryRoll()
-        {
-            if (canRoll && !isRolling)
-                StartCoroutine(RollCoroutine());
+            
+            var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var canvas in allCanvases)
+            {
+                canvas.gameObject.SetActive(false);
+            }
+            Destroy(gameObject);
         }
 
         #endregion
