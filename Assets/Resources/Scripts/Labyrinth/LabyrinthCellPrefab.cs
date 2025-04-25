@@ -36,7 +36,7 @@ namespace Resources.Scripts.Labyrinth
 
         [Header("Cell Type Settings")]
         [SerializeField, Tooltip("Если true, эта ячейка является точкой финиша.")]
-        private bool isFinishCell = false;
+        private bool isFinishCell;
 
         [Header("Sorting Settings")]
         [SerializeField, Tooltip("Высота ячейки для расчёта порядка отрисовки (должна совпадать с cellSizeY в генераторе).")]

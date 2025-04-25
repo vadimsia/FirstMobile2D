@@ -29,9 +29,9 @@ namespace Resources.Scripts.Enemy
 
         [Header("Debug Settings")]
         [SerializeField, Tooltip("Enable debug logging for enemy spawning.")]
-        private bool debugLog = false;
+        private bool debugLog;
 
-        private int currentEnemyCount = 0;
+        private int currentEnemyCount;
         private Transform playerTransform;
 
         private void Start()
