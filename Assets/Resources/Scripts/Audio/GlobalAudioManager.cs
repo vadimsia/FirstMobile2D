@@ -1,4 +1,3 @@
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,15 +8,12 @@ using UnityEngine.UI;
 
 namespace Resources.Scripts.Audio
 {
-    /// <summary>
-    /// Глобальный аудио-менеджер.
-    /// Управляет SFX, UI-звуками, фоновой музыкой (BGM) и ритмом тиков.
-    /// </summary>
+    [DisallowMultipleComponent]
     public sealed class GlobalAudioManager : MonoBehaviour
     {
         #region Singleton
 
-        public static GlobalAudioManager? Instance { get; private set; }
+        public static GlobalAudioManager Instance { get; private set; }
 
         private void Awake()
         {
@@ -37,58 +33,56 @@ namespace Resources.Scripts.Audio
 
         #endregion
 
-        [Header("Audio Mixer (optional)")]
-        [Tooltip("Главный AudioMixer проекта с группами SFX, Music и т.д.")]
-        [SerializeField] private AudioMixer? audioMixer;
+        [Header("Audio Mixer (Optional)")]
+        [Tooltip("Main project AudioMixer with SFX, Music groups, etc.")]
+        [SerializeField] private AudioMixer audioMixer;
 
-        [Header("Настройки SFX/UI")]
-        [Tooltip("AudioSource для воспроизведения SFX и UI-звуков")]
-        [SerializeField] private AudioSource? sfxSource;
-        [Tooltip("Громкость для SFX/UI (0…1)")]
+        [Header("SFX/UI Settings")]
+        [Tooltip("AudioSource for playing SFX and UI sounds")]
+        [SerializeField] private AudioSource sfxSource;
+        [Tooltip("Default SFX/UI volume (0–1)")]
         [Range(0f, 1f)]
         [SerializeField] private float defaultSfxVolume = 1f;
-        [Tooltip("Mixer Group для SFX/UI")]
-        [SerializeField] private AudioMixerGroup? sfxMixerGroup;
+        [Tooltip("Mixer Group for SFX/UI")]
+        [SerializeField] private AudioMixerGroup sfxMixerGroup;
 
-        [Header("Tick Sound (для рисования)")]
-        [Tooltip("Короткий клип-тик")]
-        [SerializeField] private AudioClip? drawingTickClip;
-        [Tooltip("Громкость тиков (0…1)")]
+        [Header("Tick Sound (e.g. for drawing tools)")]
+        [Tooltip("Short tick AudioClip")]
+        [SerializeField] private AudioClip drawingTickClip;
+        [Tooltip("Tick volume (0–1)")]
         [Range(0f, 1f)]
         [SerializeField] private float drawingTickVolume = 1f;
 
-        [Header("Настройки ритма тиков")]
-        [Tooltip("Интервал между первыми тиками, сек.")]
+        [Header("Tick Rhythm Settings")]
+        [Tooltip("Initial tick interval in seconds")]
         [SerializeField] private float startTickInterval = 1f;
-        [Tooltip("Минимальный интервал под конец, сек.")]
+        [Tooltip("Minimum interval at the end in seconds")]
         [SerializeField] private float endTickInterval = 0.2f;
-        [Tooltip("Pitch первого тика")]
+        [Tooltip("Pitch at the start of the tick rhythm")]
         [SerializeField] private float tickMinPitch = 1f;
-        [Tooltip("Pitch последнего тика")]
+        [Tooltip("Pitch at the end of the tick rhythm")]
         [SerializeField] private float tickMaxPitch = 1.5f;
 
-        [Header("Настройки фоновой музыки (BGM)")]
-        [Tooltip("AudioSource для фоновой музыки")]
-        [SerializeField] private AudioSource? musicSource;
-        [Tooltip("Плейлист фоновой музыки")]
+        [Header("Background Music (BGM)")]
+        [Tooltip("AudioSource for background music")]
+        [SerializeField] private AudioSource musicSource;
+        [Tooltip("Playlist for background music")]
         [SerializeField] private List<AudioClip> musicPlaylist = new();
-        [Tooltip("Громкость музыки (0…1)")]
+        [Tooltip("Music volume (0–1)")]
         [Range(0f, 1f)]
         [SerializeField] private float musicVolume = 1f;
-        [Tooltip("Длительность кросс-фейда между треками")]
+        [Tooltip("Cross-fade duration between tracks")]
         [SerializeField] private float crossFadeDuration = 1f;
 
         private int currentTrackIndex;
-        private Coroutine? musicFadeCoroutine;
-        private Coroutine? tickRoutine;
+        private Coroutine musicFadeCoroutine;
+        private Coroutine tickRoutine;
 
         #region Initialization
 
         private void InitializeSfxSource()
         {
-            if (sfxSource == null)
-                sfxSource = gameObject.AddComponent<AudioSource>();
-
+            sfxSource ??= gameObject.AddComponent<AudioSource>();
             sfxSource.playOnAwake = false;
             sfxSource.volume = defaultSfxVolume;
             if (sfxMixerGroup != null)
@@ -97,18 +91,16 @@ namespace Resources.Scripts.Audio
 
         private void InitializeMusicSource()
         {
-            if (musicSource == null)
-                musicSource = gameObject.AddComponent<AudioSource>();
-
+            musicSource ??= gameObject.AddComponent<AudioSource>();
             musicSource.playOnAwake = false;
             musicSource.loop = false;
             musicSource.volume = 0f;
 
             if (audioMixer != null)
             {
-                var group = audioMixer.FindMatchingGroups("Music");
-                if (group.Length > 0)
-                    musicSource.outputAudioMixerGroup = group[0];
+                var groups = audioMixer.FindMatchingGroups("Music");
+                if (groups.Length > 0)
+                    musicSource.outputAudioMixerGroup = groups[0];
             }
         }
 
@@ -116,50 +108,47 @@ namespace Resources.Scripts.Audio
 
         #region Button Registration
 
-        [Header("Привязки кнопок")]
-        [Tooltip("Список кнопок и звуков для клика и наведения")]
+        [Header("Button Bindings")]
+        [Tooltip("List of buttons and their click/hover sound settings")]
         [SerializeField] private List<ButtonAudioConfig> buttonConfigs = new();
 
         private void RegisterButtonSounds()
         {
-            foreach (var cfg in buttonConfigs)
-                cfg.Register(this);
+            foreach (var config in buttonConfigs)
+                config.Register(this);
         }
 
         [Serializable]
         private class ButtonAudioConfig
         {
-            [Tooltip("Кнопка, на которую назначаются звуки")]
-            [SerializeField] private Button? button;
-            [Tooltip("Аудиоклип для клика")]
-            [SerializeField] private AudioClip? clickClip;
-            [Tooltip("Громкость клика")]
+            [Tooltip("UI Button to attach sounds to")]
+            [SerializeField] private Button button;
+            [Tooltip("Click sound")]
+            [SerializeField] private AudioClip clickClip;
+            [Tooltip("Click volume")]
             [Range(0f, 1f)]
             [SerializeField] private float clickVolume;
-            [Tooltip("Аудиоклип для наведения")]
-            [SerializeField] private AudioClip? hoverClip;
-            [Tooltip("Громкость наведения")]
+            [Tooltip("Hover sound")]
+            [SerializeField] private AudioClip hoverClip;
+            [Tooltip("Hover volume")]
             [Range(0f, 1f)]
             [SerializeField] private float hoverVolume;
 
             public void Register(GlobalAudioManager mgr)
             {
-                if (button == null)
-                    return;
+                if (button == null) return;
 
                 if (clickClip != null)
                     button.onClick.AddListener(() => mgr.PlaySfx(clickClip, clickVolume));
 
                 if (hoverClip != null)
                 {
-                    var trig = button.GetComponent<EventTrigger>()
-                               ?? button.gameObject.AddComponent<EventTrigger>();
-                    var entry = new EventTrigger.Entry
-                    {
-                        eventID = EventTriggerType.PointerEnter
-                    };
+                    var trigger = button.GetComponent<EventTrigger>() ??
+                                  button.gameObject.AddComponent<EventTrigger>();
+
+                    var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
                     entry.callback.AddListener(_ => mgr.PlaySfx(hoverClip, hoverVolume));
-                    trig.triggers.Add(entry);
+                    trigger.triggers.Add(entry);
                 }
             }
         }
@@ -168,37 +157,34 @@ namespace Resources.Scripts.Audio
 
         #region SFX & Tick Playback
 
-        /// <summary>Обычный SFX/UI.</summary>
-        public void PlaySfx(AudioClip clip, float? volume = null)
+        /// <summary>Plays a UI/SFX sound clip at a specified or default volume.</summary>
+        private void PlaySfx(AudioClip clip, float? volume = null)
         {
+            if (clip == null) return;
+
             if (sfxSource == null)
                 InitializeSfxSource();
 
-            var src = sfxSource!;
             float vol = Mathf.Clamp01(volume ?? defaultSfxVolume);
-            src.pitch = 1f;
-            src.PlayOneShot(clip, vol);
+            sfxSource.pitch = 1f;
+            sfxSource.PlayOneShot(clip, vol);
         }
 
-        /// <summary>Единичный тик (используется внутр. корутиной).</summary>
+        /// <summary>Plays a single tick sound with specified pitch.</summary>
         private void PlayTickOnce(float pitch)
         {
-            if (drawingTickClip == null)
-                return;
+            if (drawingTickClip == null) return;
 
             if (sfxSource == null)
                 InitializeSfxSource();
 
-            var src = sfxSource!;
-            float prev = src.pitch;
-            src.pitch = pitch;
-            src.PlayOneShot(drawingTickClip, drawingTickVolume);
-            src.pitch = prev;
+            float prevPitch = sfxSource.pitch;
+            sfxSource.pitch = pitch;
+            sfxSource.PlayOneShot(drawingTickClip, drawingTickVolume);
+            sfxSource.pitch = prevPitch;
         }
 
-        /// <summary>
-        /// Запускает корутину ритма тиков на длительность duration.
-        /// </summary>
+        /// <summary>Starts a ticking rhythm over a given duration.</summary>
         public void StartTickRhythm(float duration)
         {
             if (tickRoutine != null)
@@ -207,7 +193,7 @@ namespace Resources.Scripts.Audio
             tickRoutine = StartCoroutine(TickRhythmCoroutine(duration));
         }
 
-        /// <summary>Останавливает ритм тиков.</summary>
+        /// <summary>Stops the ticking rhythm if active.</summary>
         public void StopTickRhythm()
         {
             if (tickRoutine != null)
@@ -219,24 +205,22 @@ namespace Resources.Scripts.Audio
 
         private IEnumerator TickRhythmCoroutine(float duration)
         {
-            if (drawingTickClip == null)
-                yield break;
+            if (drawingTickClip == null) yield break;
 
-            float start = Time.time;
-            while (Time.time - start < duration)
+            float startTime = Time.time;
+            while (Time.time - startTime < duration)
             {
-                float elapsed = Time.time - start;
+                float elapsed = Time.time - startTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 float interval = Mathf.Lerp(startTickInterval, endTickInterval, t);
-                float pitch    = Mathf.Lerp(tickMinPitch,   tickMaxPitch,    t);
+                float pitch = Mathf.Lerp(tickMinPitch, tickMaxPitch, t);
 
                 PlayTickOnce(pitch);
-
                 yield return new WaitForSeconds(interval);
             }
         }
 
-        /// <summary>Меняет громкость SFX/UI.</summary>
+        /// <summary>Sets the default SFX volume.</summary>
         public void SetSfxVolume(float vol)
         {
             defaultSfxVolume = Mathf.Clamp01(vol);
@@ -248,7 +232,8 @@ namespace Resources.Scripts.Audio
 
         #region Music Playback
 
-        public void PlayNextMusic() => PlayMusic((currentTrackIndex + 1) % musicPlaylist.Count);
+        public void PlayNextMusic() =>
+            PlayMusic((currentTrackIndex + 1) % musicPlaylist.Count);
 
         public void PauseMusic()
         {
@@ -271,8 +256,7 @@ namespace Resources.Scripts.Audio
 
         private void PlayMusic(int index = 0, bool loop = true)
         {
-            if (musicPlaylist.Count == 0 || musicSource == null)
-                return;
+            if (musicPlaylist.Count == 0 || musicSource == null) return;
 
             index = Mathf.Clamp(index, 0, musicPlaylist.Count - 1);
             currentTrackIndex = index;
@@ -285,7 +269,7 @@ namespace Resources.Scripts.Audio
 
         private IEnumerator FadeAndPlayMusic(AudioClip clip, bool loop)
         {
-            if (musicSource!.isPlaying)
+            if (musicSource.isPlaying)
                 yield return FadeCoroutine(musicSource, musicSource.volume, 0f, crossFadeDuration / 2);
 
             musicSource.clip = clip;
@@ -295,15 +279,16 @@ namespace Resources.Scripts.Audio
             yield return FadeCoroutine(musicSource, 0f, musicVolume, crossFadeDuration / 2);
         }
 
-        private IEnumerator FadeCoroutine(AudioSource src, float from, float to, float dur)
+        private static IEnumerator FadeCoroutine(AudioSource src, float from, float to, float duration)
         {
-            float e = 0f;
-            while (e < dur)
+            float elapsed = 0f;
+            while (elapsed < duration)
             {
-                e += Time.unscaledDeltaTime;
-                src.volume = Mathf.Lerp(from, to, e / dur);
+                elapsed += Time.unscaledDeltaTime;
+                src.volume = Mathf.Lerp(from, to, elapsed / duration);
                 yield return null;
             }
+
             src.volume = to;
         }
 

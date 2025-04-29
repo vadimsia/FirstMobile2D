@@ -1,77 +1,95 @@
-// Resources/Scripts/Data/ArenaSettings.cs
+using System;
 using UnityEngine;
 
 namespace Resources.Scripts.Data
 {
-    [System.Serializable]
-    public class ObstacleTypeSettings {
-        [Tooltip("Уникальное имя препятствия")]
-        public string obstacleName;
+    [Serializable]
+    public class ObstacleTypeSettings
+    {
+        [Tooltip("Unique obstacle identifier")]
+        public string obstacleName = string.Empty;
 
-        [Tooltip("Префаб препятствия (с SpriteRenderer и Collider)")]
-        public GameObject obstaclePrefab;
+        [Tooltip("Obstacle prefab (must include SpriteRenderer and Collider)")]
+        public GameObject obstaclePrefab = null!;
 
-        [Tooltip("Вероятность спавна (от 0 до 1) для данного типа")]
+        [Tooltip("Spawn chance (0 to 1) for this obstacle type")]
         [Range(0f, 1f)]
         public float spawnProbability = 1f;
 
-        [Tooltip("Минимальное количество, которое может появиться")]
+        [Tooltip("Minimum number of instances to spawn")]
         public int minCount = 1;
 
-        [Tooltip("Максимальное количество, которое может появиться")]
+        [Tooltip("Maximum number of instances to spawn")]
         public int maxCount = 3;
 
-        [Tooltip("Минимальный масштаб при спавне")]
+        [Tooltip("Minimum scale applied on spawn")]
         public float minScale = 1f;
 
-        [Tooltip("Максимальный масштаб при спавне")]
+        [Tooltip("Maximum scale applied on spawn")]
         public float maxScale = 1f;
     }
-
+    
     [CreateAssetMenu(fileName = "ArenaSettings", menuName = "GameSettings/Arena Settings")]
-    public class ArenaSettings : ScriptableObject {
-        [Header("Параметры арены")]
-        [Tooltip("Время выживания на арене (в секундах)")]
+    public sealed class ArenaSettings : ScriptableObject
+    {
+        #region Arena Parameters
+
+        [Header("Arena Parameters")]
+        [Tooltip("Time to survive on the arena, in seconds")]
         public float survivalTime = 10f;
 
-        [Tooltip("Количество врагов на арене")]
+        [Tooltip("Number of enemies to spawn")]
         public int enemyCount = 5;
 
-        [Tooltip("Префабы врагов")]
-        public GameObject[] enemyPrefabs;
+        [Tooltip("Enemy prefab list")]
+        public GameObject[] enemyPrefabs = Array.Empty<GameObject>();
 
-        [Header("Параметры фей")]
-        [Tooltip("Количество фей на арене")]
+        #endregion
+
+        #region Fairy Parameters
+
+        [Header("Fairy Parameters")]
+        [Tooltip("Number of fairies to spawn")]
         public int fairyCount = 3;
 
-        [Tooltip("Префабы фей")]
-        public GameObject[] fairyPrefabs;
+        [Tooltip("Fairy prefab list")]
+        public GameObject[] fairyPrefabs = Array.Empty<GameObject>();
 
-        [Header("Параметры препятствий")]
-        [Tooltip("Список настроек для препятствий, которые будут спавниться на арене")]
-        public ObstacleTypeSettings[] obstacleTypes;
+        #endregion
 
-        [Header("Дополнительные параметры препятствий")]
-        [Tooltip("Минимальное расстояние между препятствиями")]
+        #region Obstacle Parameters
+
+        [Header("Obstacle Parameters")]
+        [Tooltip("Settings for each obstacle type to spawn")]
+        public ObstacleTypeSettings[] obstacleTypes = Array.Empty<ObstacleTypeSettings>();
+
+        [Header("Additional Obstacle Settings")]
+        [Tooltip("Minimum distance required between spawned obstacles")]
         public float obstacleMinDistance = 1f;
 
-        [Header("Лес по краям карты (опционально)")]
-        [Tooltip("Включить посадку деревьев вдоль границ арены")]
+        #endregion
+
+        #region Edge Forest (Optional)
+
+        [Header("Edge Forest (Optional)")]
+        [Tooltip("Enable planting trees along arena edges")]
         public bool plantTreesAtEdges = true;
 
-        [Tooltip("Толщина лесного пояса внутри арены (в единицах)")]
+        [Tooltip("Thickness of forest border inside the arena")]
         public float edgeForestThickness = 5f;
 
-        [Tooltip("Количество деревьев на каждую сторону")]
+        [Tooltip("Number of trees per side")]
         public int edgeTreesPerSide = 50;
 
-        [Tooltip("Диапазон случайного масштаба деревьев")]
+        [Tooltip("Random scale range for edge trees")]
         public Vector2 edgeTreeScaleRange = new Vector2(0.8f, 1.5f);
 
-        [Tooltip("Диапазон разброса позиции (джиттер) по X и Y")]
+        [Tooltip("Position jitter range (X and Y axes)")]
         public Vector2 edgeTreeJitterRange = new Vector2(1f, 1f);
 
-        [Tooltip("Отключать коллайдеры у деревьев по краям")]
+        [Tooltip("Disable colliders on edge trees")]
         public bool disableEdgeTreeColliders = true;
+
+        #endregion
     }
 }

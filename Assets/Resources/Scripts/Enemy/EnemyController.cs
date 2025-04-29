@@ -1,4 +1,3 @@
-// Resources/Scripts/Enemy/EnemyController.cs
 using Resources.Scripts.Player;
 using UnityEngine;
 using System.Collections;

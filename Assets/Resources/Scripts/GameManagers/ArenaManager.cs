@@ -1,4 +1,3 @@
-// Resources/Scripts/GameManagers/ArenaManager.cs
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,27 +9,28 @@ namespace Resources.Scripts.GameManagers
 {
     public class ArenaManager : MonoBehaviour
     {
-        [Header("Настройки по умолчанию (на случай отсутствия выбранного этапа)")]
+        [Header("Default Settings (fallback if no stage is selected)")]
         [SerializeField] private ArenaSettings defaultArenaSettings;
 
-        [Header("UI Таймер")]
+        [Header("UI Timer")]
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private RectTransform clockHand;
 
-        [Header("Параметры спавна")]
-        [Tooltip("Половина размера области спавна (например, 50 означает диапазон от -50 до 50)")]
+        [Header("Spawn Parameters")]
+        [Tooltip("Half size of the spawn area (e.g., 50 means range from -50 to 50)")]
         [SerializeField] private float spawnArea = 50f;
 
         private ArenaSettings currentSettings;
         private float timer;
         private bool playerSurvived;
-        private List<Vector3> obstacleSpawnPositions = new List<Vector3>();
+        private List<Vector3> obstacleSpawnPositions = new();
         private Transform edgeTreesParent;
 
         private void Start()
         {
-            currentSettings = (GameStageManager.currentStageData?.arenaSettings) ?? defaultArenaSettings;
+            currentSettings = GameStageManager.currentStageData?.arenaSettings ?? defaultArenaSettings;
             timer = currentSettings.survivalTime;
+
             if (clockHand != null)
                 clockHand.localRotation = Quaternion.Euler(0f, 0f, -90f);
 
@@ -46,7 +46,7 @@ namespace Resources.Scripts.GameManagers
 
         private void InitializeArena()
         {
-            Debug.Log("Arena инициализирована.");
+            Debug.Log("Arena initialized.");
             SpawnEnemies();
             SpawnFairies();
             SpawnObstacles();
@@ -56,9 +56,10 @@ namespace Resources.Scripts.GameManagers
         {
             if (currentSettings.enemyPrefabs.Length == 0)
             {
-                Debug.LogWarning("Enemy Prefabs не заданы.");
+                Debug.LogWarning("Enemy prefabs not assigned.");
                 return;
             }
+
             for (int i = 0; i < currentSettings.enemyCount; i++)
             {
                 var prefab = currentSettings.enemyPrefabs.RandomElement();
@@ -70,9 +71,10 @@ namespace Resources.Scripts.GameManagers
         {
             if (currentSettings.fairyPrefabs.Length == 0)
             {
-                Debug.LogWarning("Fairy Prefabs не заданы.");
+                Debug.LogWarning("Fairy prefabs not assigned.");
                 return;
             }
+
             for (int i = 0; i < currentSettings.fairyCount; i++)
             {
                 var prefab = currentSettings.fairyPrefabs.RandomElement();
@@ -85,7 +87,7 @@ namespace Resources.Scripts.GameManagers
             var types = currentSettings.obstacleTypes;
             if (types == null || types.Length == 0)
             {
-                Debug.LogWarning("Препятствия не заданы.");
+                Debug.LogWarning("Obstacle types not set.");
                 return;
             }
 
@@ -94,72 +96,71 @@ namespace Resources.Scripts.GameManagers
 
             int required = types.Sum(os => Random.Range(os.minCount, os.maxCount + 1));
             if (obstacleSpawnPositions.Count < required)
-                Debug.LogWarning($"Позиций {obstacleSpawnPositions.Count}, требуется {required}.");
+                Debug.LogWarning($"Available positions: {obstacleSpawnPositions.Count}, required: {required}");
 
             foreach (var os in types)
             {
-                int cnt = Random.Range(os.minCount, os.maxCount + 1);
-                for (int i = 0; i < cnt; i++)
+                int count = Random.Range(os.minCount, os.maxCount + 1);
+                for (int i = 0; i < count; i++)
                 {
                     if (Random.value > os.spawnProbability || obstacleSpawnPositions.Count == 0)
                         continue;
 
-                    int idx = Random.Range(0, obstacleSpawnPositions.Count);
-                    var pos = obstacleSpawnPositions[idx];
-                    obstacleSpawnPositions.RemoveAt(idx);
+                    int index = Random.Range(0, obstacleSpawnPositions.Count);
+                    var pos = obstacleSpawnPositions[index];
+                    obstacleSpawnPositions.RemoveAt(index);
 
-                    var inst = Instantiate(os.obstaclePrefab, pos, Quaternion.identity);
-                    float s = Random.Range(os.minScale, os.maxScale);
-                    inst.transform.localScale = new Vector3(s, s, s);
+                    var instance = Instantiate(os.obstaclePrefab, pos, Quaternion.identity);
+                    float scale = Random.Range(os.minScale, os.maxScale);
+                    instance.transform.localScale = Vector3.one * scale;
                 }
             }
         }
 
         private Vector3 GetRandomPosition() =>
-            new Vector3(
-                Random.Range(-spawnArea, spawnArea),
-                Random.Range(-spawnArea, spawnArea),
-                0f
-            );
+            new(Random.Range(-spawnArea, spawnArea), Random.Range(-spawnArea, spawnArea), 0f);
 
         private List<Vector3> GeneratePoissonPoints(float minDist, float size, int attempts)
         {
-            var pts = new List<Vector3>();
-            var spawn = new List<Vector2>();
+            var points = new List<Vector3>();
+            var spawnPoints = new List<Vector2>();
+
             var first = new Vector2(
                 Random.Range(-size / 2f, size / 2f),
                 Random.Range(-size / 2f, size / 2f)
             );
-            pts.Add(first.ToVector3());
-            spawn.Add(first);
 
-            while (spawn.Count > 0)
+            points.Add(first.ToVector3());
+            spawnPoints.Add(first);
+
+            while (spawnPoints.Count > 0)
             {
-                int i = Random.Range(0, spawn.Count);
-                var center = spawn[i];
+                int index = Random.Range(0, spawnPoints.Count);
+                var center = spawnPoints[index];
                 bool accepted = false;
 
                 for (int t = 0; t < attempts; t++)
                 {
-                    float ang = Random.value * Mathf.PI * 2f;
-                    var cand = center + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * Random.Range(minDist, 2 * minDist);
+                    float angle = Random.value * Mathf.PI * 2f;
+                    var candidate = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Random.Range(minDist, 2 * minDist);
 
-                    if (Mathf.Abs(cand.x) > size / 2f || Mathf.Abs(cand.y) > size / 2f)
+                    if (Mathf.Abs(candidate.x) > size / 2f || Mathf.Abs(candidate.y) > size / 2f)
                         continue;
 
-                    if (pts.Any(p => Vector2.Distance(new Vector2(p.x, p.y), cand) < minDist))
+                    if (points.Any(p => Vector2.Distance(new Vector2(p.x, p.y), candidate) < minDist))
                         continue;
 
-                    pts.Add(cand.ToVector3());
-                    spawn.Add(cand);
+                    points.Add(candidate.ToVector3());
+                    spawnPoints.Add(candidate);
                     accepted = true;
                     break;
                 }
 
-                if (!accepted) spawn.RemoveAt(i);
+                if (!accepted)
+                    spawnPoints.RemoveAt(index);
             }
 
-            return pts;
+            return points;
         }
 
         private void PlantEdgeTrees()
@@ -167,7 +168,7 @@ namespace Resources.Scripts.GameManagers
             var types = currentSettings.obstacleTypes;
             if (types == null || types.Length == 0)
             {
-                Debug.LogWarning("Нужно хотя бы 1 тип препятствия для деревьев.");
+                Debug.LogWarning("At least one obstacle type is required for edge trees.");
                 return;
             }
 
@@ -185,37 +186,32 @@ namespace Resources.Scripts.GameManagers
                 {
                     attempts++;
 
-                    // выбираем позицию с джиттером по стороне
                     Vector3 pos = side switch
                     {
                         0 => new Vector3(Random.Range(-half, half),
-                                         Random.Range(half - currentSettings.edgeForestThickness, half),
-                                         0f),
+                            Random.Range(half - currentSettings.edgeForestThickness, half), 0f),
                         1 => new Vector3(Random.Range(-half, half),
-                                         Random.Range(-half, -half + currentSettings.edgeForestThickness),
-                                         0f),
+                            Random.Range(-half, -half + currentSettings.edgeForestThickness), 0f),
                         2 => new Vector3(Random.Range(-half, -half + currentSettings.edgeForestThickness),
-                                         Random.Range(-half, half),
-                                         0f),
+                            Random.Range(-half, half), 0f),
                         _ => new Vector3(Random.Range(half - currentSettings.edgeForestThickness, half),
-                                        Random.Range(-half, half),
-                                        0f),
+                            Random.Range(-half, half), 0f)
                     };
+
                     pos.x += Random.Range(-currentSettings.edgeTreeJitterRange.x, currentSettings.edgeTreeJitterRange.x);
                     pos.y += Random.Range(-currentSettings.edgeTreeJitterRange.y, currentSettings.edgeTreeJitterRange.y);
 
-                    // инстанциируем дерево
                     var prefab = prefabs.RandomElement();
                     var tree = Instantiate(prefab, pos, Quaternion.identity, edgeTreesParent);
                     float scale = Random.Range(currentSettings.edgeTreeScaleRange.x, currentSettings.edgeTreeScaleRange.y);
                     tree.transform.localScale = Vector3.one * scale;
 
-                    // проверяем CircleCollider2D-триггер
                     var trigger = tree.GetComponentsInChildren<CircleCollider2D>()
-                                      .FirstOrDefault(c => c.isTrigger);
+                        .FirstOrDefault(c => c.isTrigger);
+
                     if (trigger == null)
                     {
-                        Debug.LogWarning("На префабе дерева не найден CircleCollider2D с IsTrigger!");
+                        Debug.LogWarning("No CircleCollider2D with IsTrigger found on tree prefab!");
                         FinalizeTree(tree);
                         placed++; totalPlaced++;
                         continue;
@@ -223,7 +219,7 @@ namespace Resources.Scripts.GameManagers
 
                     float worldRadius = trigger.radius * Mathf.Max(tree.transform.lossyScale.x, tree.transform.lossyScale.y);
                     var hits = Physics2D.OverlapCircleAll(pos, worldRadius)
-                                       .Where(c => c.isTrigger).ToArray();
+                        .Where(c => c.isTrigger).ToArray();
 
                     if (hits.Length <= 1)
                     {
@@ -236,27 +232,26 @@ namespace Resources.Scripts.GameManagers
                     }
                 }
 
-                Debug.Log($"Сторона {side}: попыток={attempts}, посажено={placed}/{perSide}");
+                Debug.Log($"Side {side}: attempts={attempts}, placed={placed}/{perSide}");
             }
 
-            Debug.Log($"Итого деревьев по краям посажено: {totalPlaced}");
+            Debug.Log($"Total edge trees placed: {totalPlaced}");
         }
 
         private void FinalizeTree(GameObject tree)
         {
-            // 1) отключаем обычные коллайдеры
             if (currentSettings.disableEdgeTreeColliders)
+            {
                 foreach (var col in tree.GetComponentsInChildren<Collider>())
                     col.enabled = false;
-
-            // 2) ставим sortingOrder: y=spawnArea → 1, y=-spawnArea → 300
-            var sr = tree.GetComponentInChildren<SpriteRenderer>();
-            if (sr != null)
-            {
-                float y = tree.transform.position.y;
-                float t = Mathf.InverseLerp(spawnArea, -spawnArea, y);
-                sr.sortingOrder = Mathf.RoundToInt(Mathf.Lerp(1, 300, t));
             }
+
+            var sr = tree.GetComponentInChildren<SpriteRenderer>();
+            if (sr == null) return;
+
+            float y = tree.transform.position.y;
+            float t = Mathf.InverseLerp(spawnArea, -spawnArea, y);
+            sr.sortingOrder = Mathf.RoundToInt(Mathf.Lerp(1, 300, t));
         }
 
         private void Update()
@@ -277,11 +272,12 @@ namespace Resources.Scripts.GameManagers
         {
             if (timerText != null)
                 timerText.text = $"{timer:F1}";
+
             if (clockHand != null)
             {
-                float norm = Mathf.Clamp01(timer / currentSettings.survivalTime);
-                float ang = -90f - (1f - norm) * 360f;
-                clockHand.localRotation = Quaternion.Euler(0f, 0f, ang);
+                float normalized = Mathf.Clamp01(timer / currentSettings.survivalTime);
+                float angle = -90f - (1f - normalized) * 360f;
+                clockHand.localRotation = Quaternion.Euler(0f, 0f, angle);
             }
         }
 
@@ -297,7 +293,7 @@ namespace Resources.Scripts.GameManagers
 
     public static class Extensions
     {
-        public static T RandomElement<T>(this T[] arr) => arr[Random.Range(0, arr.Length)];
-        public static Vector3 ToVector3(this Vector2 v) => new Vector3(v.x, v.y, 0f);
+        public static T RandomElement<T>(this T[] array) => array[Random.Range(0, array.Length)];
+        public static Vector3 ToVector3(this Vector2 vector) => new(vector.x, vector.y, 0f);
     }
 }

@@ -3,91 +3,96 @@ using UnityEngine;
 namespace Resources.Scripts.Fairy
 {
     /// <summary>
-    /// Controls fairy behavior including movement and disappearance when collected.
+    /// Controls fairy movement within a defined radius and handles sprite orientation.
     /// </summary>
+    [DisallowMultipleComponent]
     public class FairyController : MonoBehaviour
     {
         [Header("Movement Settings")]
-        [SerializeField, Range(1, 10), Tooltip("Maximum radius multiplier for fairy movement from its start position.")]
+        [SerializeField, Range(1, 10), Tooltip("Maximum multiplier for movement radius from origin position.")]
         private int maxMoveRadius = 2;
-        [SerializeField, Range(1, 20), Tooltip("Speed at which the fairy moves.")]
+
+        [SerializeField, Range(1, 20), Tooltip("Movement speed affecting interpolation.")]
         private int speed = 5;
+
         [SerializeField, Tooltip("Smoothing factor for movement interpolation.")]
         private float moveSmoothing = 0.1f;
 
         [Header("Randomization Settings")]
-        [SerializeField, Tooltip("Minimum multiplier for the random offset distance.")]
+        [SerializeField, Tooltip("Minimum multiplier for random offset distance.")]
         private float minOffsetMultiplier = 1f;
-        [SerializeField, Tooltip("Maximum multiplier for the random offset distance.")]
+
+        [SerializeField, Tooltip("Maximum multiplier for random offset distance.")]
         private float maxOffsetMultiplier = 3f;
 
         [Header("Debug Settings")]
-        [SerializeField, Tooltip("Enable debug logging for fairy movement.")]
+        [SerializeField, Tooltip("Enable debug logging for movement.")]
         private bool debugLog;
 
-        private Vector3 startPosition;
+        private Vector3 originPosition;
         private Vector3 targetPosition;
         private SpriteRenderer spriteRenderer;
 
         private void Awake()
         {
-            // Получаем компонент SpriteRenderer для управления отображением спрайта.
             spriteRenderer = GetComponent<SpriteRenderer>();
-            if(spriteRenderer == null)
+            if (spriteRenderer == null)
             {
-                Debug.LogWarning("SpriteRenderer component is missing on Fairy object.");
+                Debug.LogWarning("Missing SpriteRenderer component on Fairy.", this);
             }
         }
 
         /// <summary>
-        /// Initializes the fairy with a starting position.
+        /// Initializes the fairy's starting position.
         /// </summary>
-        /// <param name="startPosition">The initial position of the fairy.</param>
-        public void Init(Vector3 startPosition)
+        /// <param name="initialPosition">The starting world position for movement origin.</param>
+        public void Init(Vector3 initialPosition)
         {
-            this.startPosition = startPosition;
-            targetPosition = startPosition;
+            originPosition = initialPosition;
+            targetPosition = initialPosition;
         }
 
         /// <summary>
-        /// Updates the target position for the fairy's movement.
+        /// Calculates a new random target within the defined radius.
         /// </summary>
         private void UpdateTargetPosition()
         {
-            // Вычисляем случайное смещение в пределах единичного круга и масштабируем его с учетом случайных коэффициентов и maxMoveRadius.
-            Vector3 randomOffset = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0f);
-            float multiplier = Random.Range(minOffsetMultiplier, maxOffsetMultiplier);
-            targetPosition = startPosition + randomOffset * multiplier * maxMoveRadius;
+            // Get a random direction.
+            Vector2 randomDirection = Random.insideUnitCircle.normalized;
+            // Compute total distance multiplier.
+            float distanceFactor = Random.Range(minOffsetMultiplier, maxOffsetMultiplier) * maxMoveRadius;
+            Vector3 randomOffset = new Vector3(randomDirection.x, randomDirection.y, 0f) * distanceFactor;
+            targetPosition = originPosition + randomOffset;
 
             if (debugLog)
             {
-                Debug.Log("New target position: " + targetPosition);
+                Debug.Log($"New target position: {targetPosition}", this);
             }
         }
 
         private void Update()
         {
-            // Если фея достаточно близко к цели, обновляем targetPosition.
+            // If close to target, choose a new one.
             if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
             {
                 UpdateTargetPosition();
             }
 
-            // Плавно перемещаем фею к новой позиции с использованием moveSmoothing.
-            Vector3 newPosition = Vector3.Lerp(transform.position, targetPosition, moveSmoothing * speed * Time.deltaTime);
-            Vector3 moveDirection = newPosition - transform.position;
+            // Smoothly interpolate towards the target.
+            float t = moveSmoothing * speed * Time.deltaTime;
+            Vector3 newPosition = Vector3.Lerp(transform.position, targetPosition, t);
+            Vector3 moveDir = newPosition - transform.position;
             transform.position = newPosition;
 
-            // Обновляем направление спрайта: если движение вправо, переворачиваем спрайт.
-            if (spriteRenderer != null && moveDirection.x != 0)
+            // Flip sprite based on horizontal movement direction.
+            if (spriteRenderer != null && moveDir.x != 0f)
             {
-                // По умолчанию спрайт смотрит влево (flipX == false).
-                spriteRenderer.flipX = moveDirection.x > 0;
+                spriteRenderer.flipX = moveDir.x > 0f;
             }
         }
 
         /// <summary>
-        /// Destroys the fairy from the scene when collected.
+        /// Removes the fairy from the scene.
         /// </summary>
         public void DestroyFairy()
         {
