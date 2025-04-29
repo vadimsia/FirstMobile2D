@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Rendering.Universal; // Для ShadowCaster2D
+using UnityEngine.Rendering.Universal;
 using TMPro;
 using Resources.Scripts.Data;
 using Resources.Scripts.Misc;
@@ -21,12 +22,12 @@ namespace Resources.Scripts.Labyrinth
         [SerializeField] private float defaultTimeLimit = 30f;
 
         [Header("Префабы стен")]
-        [SerializeField] private GameObject topWallPrefab;
-        [SerializeField] private GameObject bottomWallPrefab;
+        [SerializeField] private GameObject topWallPrefab;        // содержит дочерние Up/Down
+        [SerializeField] private GameObject bottomWallPrefab;     // содержит дочерние Up/Down
         [SerializeField] private GameObject leftWallPrefab;       // изометрическая
         [SerializeField] private GameObject leftNoIsoWallPrefab;  // без изометрии
-        [SerializeField] private GameObject rightWallPrefab;
-        [SerializeField] private GameObject rightNoIsoWallPrefab;
+        [SerializeField] private GameObject rightWallPrefab;      // изометрическая
+        [SerializeField] private GameObject rightNoIsoWallPrefab; // без изометрии, теперь с Up/Down
 
         [Header("Смещения")]
         [SerializeField] private float topWallSpacingY;
@@ -54,19 +55,62 @@ namespace Resources.Scripts.Labyrinth
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private RectTransform clockHand;
 
-        // Внутренние
+        [Header("Тени")]
+        [SerializeField] private float shadowWidthOffset = 0.1f;
+        [SerializeField] private float shadowHeightOffset = 0.1f;
+
+        [Header("Sorting Order Настройки")]
+        [Tooltip("Order in Layer для верхней части верхней стены (Top Up)")]
+        [SerializeField] private int sortingOrderTopUp = 4;
+        [Tooltip("Order in Layer для нижней части верхней стены (Top Down)")]
+        [SerializeField] private int sortingOrderTopDown = 4;
+        [Tooltip("Order in Layer для верхней части нижней стены (Bottom Up)")]
+        [SerializeField] private int sortingOrderBottomUp = 2;
+        [Tooltip("Order in Layer для нижней части нижней стены (Bottom Down)")]
+        [SerializeField] private int sortingOrderBottomDown = 2;
+        [Tooltip("Order in Layer для изометрической левой стены")]
+        [SerializeField] private int sortingOrderLeftIso = 3;
+        [Tooltip("Order in Layer для НЕ-изометрической левой стены")]
+        [SerializeField] private int sortingOrderLeftNoIso = 3;
+        [Tooltip("Order in Layer для изометрической правой стены")]
+        [SerializeField] private int sortingOrderRightIso = 3;
+        [Tooltip("Order in Layer для верхней части НЕ-изометрической правой стены (RightNoIso Up)")]
+        [SerializeField] private int sortingOrderRightNoIsoUp = 3;
+        [Tooltip("Order in Layer для нижней части НЕ-изометрической правой стены (RightNoIso Down)")]
+        [SerializeField] private int sortingOrderRightNoIsoDown = 3;
+
+        [Header("Unity Layer ID для Labyrinth")]
+        [Tooltip("Физический слой, на котором будут все стены и их части")]
+        [SerializeField] private int labyrinthUnityLayer = 3;
+
         private float labyrinthTimer;
         private float totalLabyrinthTime;
         private LabyrinthField labyrinth;
         private int rows, cols;
         private float cellSizeX, cellSizeY;
-        [SerializeField] private int sortingOffset = 10;
 
         private enum WallOrientation { Top, Bottom, Left, Right }
 
+        // Reflection-кэш приватных полей ShadowCaster2D
+        private static readonly FieldInfo FiShapePath;
+        private static readonly FieldInfo FiShapePathHash;
+        private static readonly FieldInfo FiMesh;
+        private static readonly MethodInfo MiGenerateShadowMesh;
+
+        static LabyrinthGeneratorWithWalls()
+        {
+            var scType = typeof(ShadowCaster2D);
+            FiShapePath        = scType.GetField("m_ShapePath",     BindingFlags.NonPublic | BindingFlags.Instance);
+            FiShapePathHash    = scType.GetField("m_ShapePathHash", BindingFlags.NonPublic | BindingFlags.Instance);
+            FiMesh             = scType.GetField("m_Mesh",          BindingFlags.NonPublic | BindingFlags.Instance);
+            var utilType       = scType.Assembly.GetType("UnityEngine.Rendering.Universal.ShadowUtility");
+            MiGenerateShadowMesh = utilType?
+                .GetMethod("GenerateShadowMesh", BindingFlags.Public | BindingFlags.Static);
+        }
+
         private void Start()
         {
-            // Загружаем параметры лабиринта
+            // Загрузка параметров лабиринта
             if (labyrinthSettings != null)
             {
                 rows = labyrinthSettings.rows;
@@ -78,18 +122,14 @@ namespace Resources.Scripts.Labyrinth
             else if (GameStageManager.currentStageData?.labyrinthSettings != null)
             {
                 var s = GameStageManager.currentStageData.labyrinthSettings;
-                rows = s.rows;
-                cols = s.cols;
-                cellSizeX = s.cellSizeX;
-                cellSizeY = s.cellSizeY;
+                rows = s.rows; cols = s.cols;
+                cellSizeX = s.cellSizeX; cellSizeY = s.cellSizeY;
                 labyrinthTimer = s.labyrinthTimeLimit;
             }
             else
             {
-                rows = defaultRows;
-                cols = defaultCols;
-                cellSizeX = defaultCellSizeX;
-                cellSizeY = defaultCellSizeY;
+                rows = defaultRows; cols = defaultCols;
+                cellSizeX = defaultCellSizeX; cellSizeY = defaultCellSizeY;
                 labyrinthTimer = defaultTimeLimit;
             }
 
@@ -100,14 +140,14 @@ namespace Resources.Scripts.Labyrinth
             labyrinth = new LabyrinthField(rows, cols, cellSizeX, cellSizeY);
             GenerateWalls();
 
-            // Ставим игрока
             var player = GameObject.FindWithTag(ETag.Player.ToString());
             if (player != null)
                 player.transform.position = labyrinth.GetStartWorldPosition();
 
-            // Решение на миникарте
             if (LabyrinthMapController.Instance != null)
-                LabyrinthMapController.Instance.SetSolutionPath(labyrinth.GetSolutionPathWorldPositions());
+                LabyrinthMapController.Instance.SetSolutionPath(
+                    labyrinth.GetSolutionPathWorldPositions()
+                );
         }
 
         private void GenerateWalls()
@@ -121,59 +161,40 @@ namespace Resources.Scripts.Labyrinth
                 Vector3 center = new Vector3(c * cellSizeX, -r * cellSizeY, 0f);
                 var cell = labyrinth.Field[r, c];
 
-                // Верхняя стена
                 if (cell.TopBorder && topWallPrefab != null)
-                    CreateWall(topWallPrefab, WallOrientation.Top, r, c, center,
-                               Vector3.up * (cellSizeY/2 + topWallSpacingY), "TopWall");
+                    CreateWall(topWallPrefab, WallOrientation.Top,    r, c,
+                               center, Vector3.up    * (cellSizeY / 2 + topWallSpacingY));
 
-                // Нижняя стена
                 if (cell.BottomBorder && bottomWallPrefab != null)
-                    CreateWall(bottomWallPrefab, WallOrientation.Bottom, r, c, center,
-                               Vector3.down * (cellSizeY/2 + bottomWallSpacingY), "BottomWall");
+                    CreateWall(bottomWallPrefab, WallOrientation.Bottom, r, c,
+                               center, Vector3.down  * (cellSizeY / 2 + bottomWallSpacingY));
 
-                // Левая стена
                 if (cell.LeftBorder)
                 {
-                    bool bottomHere    = cell.BottomBorder
-                                         || (c > 0 && labyrinth.Field[r, c-1].BottomBorder);
-                    bool verticalBelow = (r < rows - 1 && labyrinth.Field[r + 1, c].LeftBorder);
+                    bool isNoIso = cell.BottomBorder
+                                 || (c > 0 && labyrinth.Field[r, c - 1].BottomBorder)
+                                 || (r < rows - 1 && labyrinth.Field[r + 1, c].LeftBorder);
 
-                    if (bottomHere || verticalBelow)
-                    {
-                        CreateWall(leftNoIsoWallPrefab, WallOrientation.Left, r, c, center,
-                                   Vector3.left * (cellSizeX/2 + leftWallSpacingX), "LeftNoIsoWall");
-                    }
-                    else
-                    {
-                        CreateWall(leftWallPrefab, WallOrientation.Left, r, c, center,
-                                   Vector3.left * (cellSizeX/2 + leftWallSpacingX), "LeftWall");
-                    }
+                    CreateWall(isNoIso ? leftNoIsoWallPrefab : leftWallPrefab,
+                               WallOrientation.Left,   r, c,
+                               center, Vector3.left   * (cellSizeX / 2 + leftWallSpacingX));
                 }
 
-                // Правая стена
                 if (cell.RightBorder)
                 {
-                    bool bottomHere    = cell.BottomBorder
-                                         || (c < cols-1 && labyrinth.Field[r, c+1].BottomBorder);
-                    bool verticalBelow = (r < rows - 1 && labyrinth.Field[r + 1, c].RightBorder);
+                    bool isNoIso = cell.BottomBorder
+                                 || (c < cols - 1 && labyrinth.Field[r, c + 1].BottomBorder)
+                                 || (r < rows - 1 && labyrinth.Field[r + 1, c].RightBorder);
 
-                    if (bottomHere || verticalBelow)
-                    {
-                        CreateWall(rightNoIsoWallPrefab, WallOrientation.Right, r, c, center,
-                                   Vector3.right * (cellSizeX/2 + rightWallSpacingX), "RightNoIsoWall");
-                    }
-                    else
-                    {
-                        CreateWall(rightWallPrefab, WallOrientation.Right, r, c, center,
-                                   Vector3.right * (cellSizeX/2 + rightWallSpacingX), "RightWall");
-                    }
+                    CreateWall(isNoIso ? rightNoIsoWallPrefab : rightWallPrefab,
+                               WallOrientation.Right,  r, c,
+                               center, Vector3.right  * (cellSizeX / 2 + rightWallSpacingX));
                 }
 
-                // Бонусы и ловушки
                 if (!cell.IsStart && !cell.IsFinish)
                 {
                     if (cell.IsSolutionPath) bonusPositions.Add(center);
-                    else                     trapPositions.Add(center);
+                    else                     trapPositions .Add(center);
                 }
             }
 
@@ -182,30 +203,91 @@ namespace Resources.Scripts.Labyrinth
         }
 
         private GameObject CreateWall(GameObject prefab, WallOrientation ori,
-                                      int r, int c, Vector3 center, Vector3 offset, string baseName)
+                                      int r, int c, Vector3 center, Vector3 offset)
         {
-            if (prefab == null) return null;
             var go = Instantiate(prefab, center + offset, Quaternion.identity, transform);
-            go.name = $"{baseName}_R{r}_C{c}";
-            int extra = ori == WallOrientation.Bottom ? 2 : (ori == WallOrientation.Top ? 0 : 1);
-            SetSortingOrder(go, r * sortingOffset + c + extra);
-            AddCollider(go, ori);
-            AddShadowCaster(go);
+            go.name = $"{ori}Wall_R{r}_C{c}";
+
+            // Общий Unity-слой
+            SetLayerRecursively(go, labyrinthUnityLayer);
+
+            // SortingOrder
+            if (ori == WallOrientation.Top)
+            {
+                var up   = go.transform.Find("Up");
+                var down = go.transform.Find("Down");
+                if (up   != null) { var sr = up  .GetComponent<SpriteRenderer>(); if (sr != null) sr.sortingOrder = sortingOrderTopUp;   }
+                if (down != null) { var sr = down.GetComponent<SpriteRenderer>(); if (sr != null) sr.sortingOrder = sortingOrderTopDown; }
+            }
+            else if (ori == WallOrientation.Bottom)
+            {
+                var up   = go.transform.Find("Up");
+                var down = go.transform.Find("Down");
+                if (up   != null) { var sr = up  .GetComponent<SpriteRenderer>(); if (sr != null) sr.sortingOrder = sortingOrderBottomUp;   }
+                if (down != null) { var sr = down.GetComponent<SpriteRenderer>(); if (sr != null) sr.sortingOrder = sortingOrderBottomDown; }
+            }
+            else if (ori == WallOrientation.Left)
+            {
+                var isNoIso = prefab == leftNoIsoWallPrefab;
+                var sr = go.GetComponent<SpriteRenderer>();
+                if (sr != null) sr.sortingOrder = isNoIso ? sortingOrderLeftNoIso : sortingOrderLeftIso;
+            }
+            else // Right
+            {
+                bool isNoIso = prefab == rightNoIsoWallPrefab;
+                if (isNoIso)
+                {
+                    var up   = go.transform.Find("Up");
+                    var down = go.transform.Find("Down");
+                    if (up   != null) { var sr = up  .GetComponent<SpriteRenderer>(); if (sr != null) sr.sortingOrder = sortingOrderRightNoIsoUp;   }
+                    if (down != null) { var sr = down.GetComponent<SpriteRenderer>(); if (sr != null) sr.sortingOrder = sortingOrderRightNoIsoDown; }
+                }
+                else
+                {
+                    var sr = go.GetComponent<SpriteRenderer>();
+                    if (sr != null) sr.sortingOrder = sortingOrderRightIso;
+                }
+            }
+
+            AddCollidersAndShadows(go, ori);
             return go;
+        }
+
+        private void AddCollidersAndShadows(GameObject go, WallOrientation ori)
+        {
+            if (ori == WallOrientation.Top || ori == WallOrientation.Bottom)
+            {
+                foreach (Transform child in go.transform)
+                {
+                    var part = child.gameObject;
+                    if (enableWallColliders) AddCollider(part, ori);
+
+                    var sc = part.GetComponent<ShadowCaster2D>() ?? part.AddComponent<ShadowCaster2D>();
+                    sc.castsShadows = true;
+                    sc.selfShadows  = false;
+                    sc.alphaCutoff  = 1f;
+                    ApplyCustomShadowPath(sc, cellSizeX + shadowWidthOffset, cellSizeY + shadowHeightOffset);
+                }
+            }
+            else
+            {
+                if (enableWallColliders) AddCollider(go, ori);
+
+                var sc = go.GetComponent<ShadowCaster2D>() ?? go.AddComponent<ShadowCaster2D>();
+                sc.castsShadows = true;
+                sc.selfShadows  = false;
+                sc.alphaCutoff  = 1f;
+                ApplyCustomShadowPath(sc, cellSizeX + shadowWidthOffset, cellSizeY + shadowHeightOffset);
+            }
         }
 
         private void AddCollider(GameObject go, WallOrientation ori)
         {
-            if (!enableWallColliders || go == null) return;
-
-            // Ищем ненулевой физический коллайдер
             BoxCollider2D phys = null;
             foreach (var c in go.GetComponents<BoxCollider2D>())
                 if (!c.isTrigger) { phys = c; break; }
 
-            if (phys == null)
-                phys = go.AddComponent<BoxCollider2D>();
-
+            if (phys == null) phys = go.AddComponent<BoxCollider2D>();
             phys.isTrigger = false;
 
             switch (ori)
@@ -229,22 +311,45 @@ namespace Resources.Scripts.Labyrinth
             }
         }
 
-        private void AddShadowCaster(GameObject go)
+        private static void ApplyCustomShadowPath(ShadowCaster2D sc, float width, float height)
         {
-            if (go == null) return;
-            if (go.GetComponent<ShadowCaster2D>() == null)
-                go.AddComponent<ShadowCaster2D>();
+            if (sc == null || FiShapePath == null || FiShapePathHash == null
+                       || FiMesh == null || MiGenerateShadowMesh == null)
+                return;
+
+            float hw = width  / 2f;
+            float hh = height / 2f;
+            var pts2D = new[]
+            {
+                new Vector2(-hw, -hh),
+                new Vector2(-hw,  hh),
+                new Vector2( hw,  hh),
+                new Vector2( hw, -hh),
+            };
+            var pts3D = new Vector3[pts2D.Length];
+            for (int i = 0; i < pts2D.Length; i++)
+                pts3D[i] = pts2D[i];
+
+            FiShapePath    .SetValue(sc, pts3D);
+            FiShapePathHash.SetValue(sc, Random.Range(int.MinValue, int.MaxValue));
+
+            var mesh = (Mesh)FiMesh.GetValue(sc);
+            MiGenerateShadowMesh.Invoke(null, new object[]{ mesh, pts3D });
+            FiMesh.SetValue(sc, mesh);
         }
 
-        private void SetSortingOrder(GameObject go, int order)
+        private void SetLayerRecursively(GameObject obj, int layer)
         {
-            var sr = go.GetComponent<SpriteRenderer>();
-            if (sr != null) sr.sortingOrder = order;
+            obj.layer = layer;
+            foreach (Transform child in obj.transform)
+                SetLayerRecursively(child.gameObject, layer);
         }
 
         private void PlaceItems(GameObject prefab, int count, List<Vector3> positions)
         {
-            if (prefab == null || positions.Count == 0 || count <= 0) return;
+            if (prefab == null || positions.Count == 0 || count <= 0)
+                return;
+
             int placed = 0;
             while (placed < count && positions.Count > 0)
             {
@@ -252,35 +357,29 @@ namespace Resources.Scripts.Labyrinth
                 Instantiate(prefab, positions[idx], Quaternion.identity, transform);
                 placed++;
                 positions.RemoveAll(p =>
-                    Mathf.Abs(p.x - positions[idx].x)/cellSizeX +
-                    Mathf.Abs(p.y - positions[idx].y)/cellSizeY < minPlacementDistance);
+                    Mathf.Abs(p.x - positions[idx].x) / cellSizeX +
+                    Mathf.Abs(p.y - positions[idx].y) / cellSizeY < minPlacementDistance
+                );
             }
         }
 
         private void Update()
         {
             labyrinthTimer -= Time.deltaTime;
-            UpdateTimerUI();
-            if (labyrinthTimer <= 0f)
-                LoadArenaScene();
-        }
-
-        private void UpdateTimerUI()
-        {
             if (timerText != null)
                 timerText.text = $"{labyrinthTimer:F1}";
-            if (clockHand != null && totalLabyrinthTime > 0)
+            if (clockHand != null && totalLabyrinthTime > 0f)
             {
                 float norm = Mathf.Clamp01(labyrinthTimer / totalLabyrinthTime);
                 clockHand.localRotation = Quaternion.Euler(0, 0, -90f - (1 - norm) * 360f);
             }
-        }
 
-        private void LoadArenaScene()
-        {
-            var data = GameStageManager.currentStageData;
-            if (data != null)
-                SceneManager.LoadScene(data.arenaSceneName);
+            if (labyrinthTimer <= 0f)
+            {
+                var data = GameStageManager.currentStageData;
+                if (data != null)
+                    SceneManager.LoadScene(data.arenaSceneName);
+            }
         }
     }
 }

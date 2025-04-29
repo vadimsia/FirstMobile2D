@@ -192,19 +192,19 @@ MonoBehaviour:
   labyrinthSettings: {fileID: 11400000, guid: 702939bdeb212ec498f4019ff898cc0f, type: 2}
   defaultRows: 10
   defaultCols: 10
-  defaultCellSizeX: 0.82
-  defaultCellSizeY: 0.7
+  defaultCellSizeX: 1
+  defaultCellSizeY: 1
   defaultTimeLimit: 30
   topWallPrefab: {fileID: 9187151119874588691, guid: f673001af7cdd3546b948f733a0b8f44, type: 3}
   bottomWallPrefab: {fileID: 6476023305480796975, guid: e293fdedf158cb14b82e528062ec84a7, type: 3}
   leftWallPrefab: {fileID: 6127058919286614785, guid: 5bda52dba5c1a2c43b08c65e0569a684, type: 3}
-  rightWallPrefab: {fileID: 6459350706025179438, guid: b506b0df65e970449b3476ae9c2b2f88, type: 3}
   leftNoIsoWallPrefab: {fileID: 5082289136535667910, guid: 496a48cc8f4e44e48929686c62c102df, type: 3}
+  rightWallPrefab: {fileID: 6459350706025179438, guid: b506b0df65e970449b3476ae9c2b2f88, type: 3}
   rightNoIsoWallPrefab: {fileID: 9025852097395815732, guid: 97fc827e6962e57489706fa7306a857d, type: 3}
   topWallSpacingY: -0.044
-  bottomWallSpacingY: 0.1
-  leftWallSpacingX: -0.044
-  rightWallSpacingX: -0.044
+  bottomWallSpacingY: 0.044
+  leftWallSpacingX: 0
+  rightWallSpacingX: 0
   enableWallColliders: 1
   horizontalColliderSize: {x: 8, y: 1.5}
   topColliderOffset: {x: 0, y: 0.3}
@@ -219,7 +219,18 @@ MonoBehaviour:
   trapCount: 3
   timerText: {fileID: 0}
   clockHand: {fileID: 2913262263104025372}
-  sortingOffset: 10
+  shadowWidthOffset: 0.1
+  shadowHeightOffset: 0.1
+  sortingOrderTopUp: 0
+  sortingOrderTopDown: 1
+  sortingOrderBottomUp: 3
+  sortingOrderBottomDown: 1
+  sortingOrderLeftIso: 5
+  sortingOrderLeftNoIso: 5
+  sortingOrderRightIso: 5
+  sortingOrderRightNoIsoUp: 4
+  sortingOrderRightNoIsoDown: 2
+  labyrinthUnityLayer: 3
 --- !u!1 &253669926
 GameObject:
   m_ObjectHideFlags: 0
@@ -844,7 +855,7 @@ TilemapRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: -1
+  m_SortingOrder: -2
   m_ChunkSize: {x: 32, y: 32, z: 32}
   m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
   m_MaxChunkCount: 16
@@ -27648,7 +27659,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2992285719649780434, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_SortingOrder
-      value: 300
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2992285719649780434, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: aee47b369f3d2ec45a0ba9533405b5a8, type: 2}
+    - target: {fileID: 7161899701119650399, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_Size.x
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7161899701119650399, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_Size.y
+      value: 2.72
+      objectReference: {fileID: 0}
+    - target: {fileID: 7161899701119650399, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_Offset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7161899701119650399, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_Offset.y
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 7684459473974908381, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_Name
