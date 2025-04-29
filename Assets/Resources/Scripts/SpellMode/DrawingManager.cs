@@ -1,14 +1,17 @@
+#nullable enable
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Resources.Scripts.Player;      // Access to player stats
+using Resources.Scripts.Player;        // Доступ к playerStatsHandler
 using Resources.Scripts.SpellMode.Skills;
-using Resources.Scripts.UI;          // For ManaSpendEffect
+using Resources.Scripts.UI;            // Для ManaSpendEffect
+using Resources.Scripts.Audio;         // Для GlobalAudioManager
 
 namespace Resources.Scripts.SpellMode
 {
     /// <summary>
     /// Manages gesture drawing, recognition, and execution of spell skills.
+    /// Делегирует звуковой ритм тиков в GlobalAudioManager.
     /// </summary>
     public class DrawingManager : MonoBehaviour
     {
@@ -16,14 +19,14 @@ namespace Resources.Scripts.SpellMode
 
         [Header("Start Mode")]
         [Tooltip("Drawing starts when the button is pressed.")]
-        [SerializeField] private Button drawButton;
+        [SerializeField] private Button? drawButton;
 
         [Header("UI Elements")]
-        [SerializeField] private Text feedbackText;
+        [SerializeField] private Text? feedbackText;
 
         [Header("Line Prefab")]
-        [Tooltip("Prefab with a LineRenderer component for displaying the drawn line.")]
-        [SerializeField] private GameObject drawingLinePrefab;
+        [Tooltip("Prefab с LineRenderer для отрисовки линии.")]
+        [SerializeField] private GameObject? drawingLinePrefab;
 
         [Header("LineRenderer Settings")]
         [SerializeField] private Color drawingLineColor = Color.red;
@@ -31,36 +34,36 @@ namespace Resources.Scripts.SpellMode
         [SerializeField] private int drawingLineSortingOrder = 100;
 
         [Header("Drawing Settings")]
-        [Tooltip("Maximum drawing time in seconds.")]
+        [Tooltip("Макс. время рисования, с.")]
         [SerializeField] private float maxDrawingTime = 5f;
-        [Tooltip("Minimum distance between points to be recorded.")]
+        [Tooltip("Мин. расстояние между точками.")]
         [SerializeField] private float movementThreshold = 0.1f;
-        [Tooltip("Time without movement after which the player is considered stopped.")]
+        [Tooltip("Время без движения для окончания сегмента.")]
         [SerializeField] private float stopTimeThreshold = 0.5f;
-        [Tooltip("Minimum number of points required for recognition.")]
+        [Tooltip("Мин. кол-во точек для распознавания.")]
         [SerializeField] private int minPointsForRecognition = 10;
-        [Tooltip("Minimum total path length for a valid gesture.")]
+        [Tooltip("Мин. длина пути для валидного жеста.")]
         [SerializeField] private float minTotalPathLength = 1.0f;
 
-        [Header("Mana Spend FX")]
-        [SerializeField] private GameObject manaSpendEffectPrefab;
-        [SerializeField] private RectTransform manaBarUI;
-        [SerializeField] private Canvas mainCanvas;
+        [Header("Combo Settings")]
+        [Tooltip("Разрешить несколько жестов за одну сессию.")]
+        [SerializeField] private bool enableComboMode = true;
+        [Tooltip("Макс. время между жестами в комбо.")]
+        [SerializeField] private float comboTimeWindow = 3f;
 
         [Header("Recognition Settings")]
-        [SerializeField] private IconGestureRecognizer gestureRecognizer;
+        [SerializeField] private IconGestureRecognizer? gestureRecognizer;
         [SerializeField] private int resampleCount = 64;
         [SerializeField] private int smoothingWindow = 3;
 
         [Header("Player Stats")]
-        [Tooltip("Reference to the component managing player's mana.")]
-        [SerializeField] private PlayerStatsHandler playerStatsHandler;
+        [Tooltip("Управление маной игрока.")]
+        [SerializeField] private PlayerStatsHandler? playerStatsHandler;
 
-        [Header("Combo Settings")]
-        [Tooltip("Allow multiple gestures in one drawing session.")]
-        [SerializeField] private bool enableComboMode = true;
-        [Tooltip("Maximum time allowed between gestures in a combo session.")]
-        [SerializeField] private float comboTimeWindow = 3f;
+        [Header("Mana Spend FX")]
+        [SerializeField] private GameObject? manaSpendEffectPrefab;
+        [SerializeField] private RectTransform? manaBarUI;
+        [SerializeField] private Canvas? mainCanvas;
 
         #endregion
 
@@ -73,10 +76,11 @@ namespace Resources.Scripts.SpellMode
 
         private Vector3 lastRecordedPosition;
         private readonly List<Vector3> drawnPoints = new List<Vector3>();
-        private LineRenderer currentLine;
+        private LineRenderer? currentLine;
         private bool hasMoved;
 
         private readonly List<SignTemplateIcon> recognizedSigns = new List<SignTemplateIcon>();
+        private GlobalAudioManager? audioManager;
 
         #endregion
 
@@ -84,6 +88,8 @@ namespace Resources.Scripts.SpellMode
 
         private void Start()
         {
+            audioManager = GlobalAudioManager.Instance;
+
             if (drawButton != null)
                 drawButton.onClick.AddListener(StartDrawing);
 
@@ -142,9 +148,6 @@ namespace Resources.Scripts.SpellMode
 
         #region Public Methods
 
-        /// <summary>
-        /// Initializes the drawing session.
-        /// </summary>
         public void StartDrawing()
         {
             if (currentLine != null)
@@ -164,7 +167,7 @@ namespace Resources.Scripts.SpellMode
 
             if (drawingLinePrefab != null)
             {
-                GameObject lineObj = Instantiate(drawingLinePrefab);
+                var lineObj = Instantiate(drawingLinePrefab);
                 currentLine = lineObj.GetComponent<LineRenderer>();
                 if (currentLine != null)
                 {
@@ -189,11 +192,11 @@ namespace Resources.Scripts.SpellMode
 
             if (feedbackText != null)
                 feedbackText.text = "Drawing...";
+
+            // Запустить ритм тиков
+            audioManager?.StartTickRhythm(maxDrawingTime);
         }
 
-        /// <summary>
-        /// Finalizes the drawing session and executes recognized skills.
-        /// </summary>
         public void EndDrawing()
         {
             if (!isDrawing)
@@ -202,6 +205,9 @@ namespace Resources.Scripts.SpellMode
             isDrawing = false;
             if (feedbackText != null)
                 feedbackText.text = "Processing...";
+
+            // Остановить ритм тиков
+            audioManager?.StopTickRhythm();
 
             if (drawnPoints.Count >= minPointsForRecognition)
                 ProcessPartialDrawing();
@@ -214,20 +220,15 @@ namespace Resources.Scripts.SpellMode
             }
 
             bool isCombo = recognizedSigns.Count >= 2;
-
-            // 1) Sum up all mana costs
             int totalManaCost = 0;
             foreach (var template in recognizedSigns)
                 totalManaCost += Mathf.RoundToInt(template.manaCost);
 
             Debug.Log($"[DrawingManager] Attempt to spend {totalManaCost} mana");
 
-            // 2) Consume and spawn the FX
             if (playerStatsHandler != null && playerStatsHandler.UseMana(totalManaCost))
             {
                 ShowManaSpendEffect(totalManaCost);
-
-                // 3) Spawn each skill effect
                 foreach (var template in recognizedSigns)
                     ExecuteSkill(template, isCombo);
 
@@ -268,7 +269,7 @@ namespace Resources.Scripts.SpellMode
             var normalized = GestureUtils.NormalizePoints(points2D, resampleCount, smoothingWindow);
             Debug.Log($"Normalized Input: {Vector2ListToString(normalized)}");
 
-            var recognized = gestureRecognizer.Recognize(normalized);
+            var recognized = gestureRecognizer?.Recognize(normalized);
             if (recognized != null)
             {
                 recognizedSigns.Add(recognized);
@@ -310,10 +311,6 @@ namespace Resources.Scripts.SpellMode
                 currentLine.SetPosition(i, drawnPoints[i]);
         }
 
-        /// <summary>
-        /// Spawns the floating "-XX" and sends it toward the mana bar.
-        /// Uses the new FindFirstObjectByType API instead of the deprecated FindObjectOfType.
-        /// </summary>
         private void ShowManaSpendEffect(int amount)
         {
             Debug.Log("[DrawingManager] Instantiating ManaSpendEffect");
@@ -324,10 +321,9 @@ namespace Resources.Scripts.SpellMode
                 return;
             }
 
-            // Use the newer, non-deprecated API to find a Canvas in the scene
             if (mainCanvas == null)
             {
-                mainCanvas = Object.FindFirstObjectByType<Canvas>();
+                mainCanvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
                 if (mainCanvas == null)
                 {
                     Debug.LogError("[DrawingManager] Could not find any Canvas in the scene!");
@@ -350,18 +346,11 @@ namespace Resources.Scripts.SpellMode
 
             var effect = effectGo.GetComponent<ManaSpendEffect>();
             if (effect != null)
-            {
                 effect.Initialize(amount, transform.position, manaBarUI);
-            }
             else
-            {
                 Debug.LogError("[DrawingManager] Prefab does not contain a ManaSpendEffect component!");
-            }
         }
 
-        /// <summary>
-        /// Converts a list of Vector2 points to a readable string.
-        /// </summary>
         private string Vector2ListToString(List<Vector2> points)
         {
             var sb = new System.Text.StringBuilder();
