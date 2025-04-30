@@ -28470,6 +28470,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 850082130}
     - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: drawingTickClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
       propertyPath: buttonConfigs.Array.data[0].button
       value: 
       objectReference: {fileID: 2025142487}

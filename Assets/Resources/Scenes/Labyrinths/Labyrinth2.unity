@@ -241,7 +241,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2992285719649780434, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_SortingOrder
-      value: 300
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7684459473974908381, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_Name
@@ -528,6 +528,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2802167957235857347, guid: 7e7fbc0764d3268408c45364ebeaa640, type: 3}
   m_PrefabInstance: {fileID: 7897463271565774870}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &652735028 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7332013737345076611, guid: 7e7fbc0764d3268408c45364ebeaa640, type: 3}
+  m_PrefabInstance: {fileID: 7897463271565774870}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &667205357
 GameObject:
   m_ObjectHideFlags: 0
@@ -27845,6 +27856,18 @@ PrefabInstance:
       value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: musicPlaylist.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: 'musicPlaylist.Array.data[0]'
+      value: 
+      objectReference: {fileID: 8300000, guid: 11704038efbf90743aace1cafe3969e1, type: 3}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
       propertyPath: buttonConfigs.Array.data[0].button
       value: 
       objectReference: {fileID: 750950301}
@@ -27852,6 +27875,50 @@ PrefabInstance:
       propertyPath: buttonConfigs.Array.data[1].button
       value: 
       objectReference: {fileID: 2025142487}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[2].button
+      value: 
+      objectReference: {fileID: 652735028}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[0].hoverClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 755bed4a3ea06764ab06ed5e2cbdf1ab, type: 3}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[1].hoverClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 755bed4a3ea06764ab06ed5e2cbdf1ab, type: 3}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[2].clickClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 755bed4a3ea06764ab06ed5e2cbdf1ab, type: 3}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[2].hoverClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[0].clickVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[0].hoverVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[1].clickVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[1].hoverVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[2].clickVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1801157582348610192, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
+      propertyPath: buttonConfigs.Array.data[2].hoverVolume
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8305512010364769214, guid: 61667428f6defbd4a998efbcc2c4a007, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -28716,7 +28783,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3202786060410468144, guid: 744a0cc28fa1d5c438f0223611d30750, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3964076789637571633, guid: 744a0cc28fa1d5c438f0223611d30750, type: 3}
       propertyPath: m_Camera

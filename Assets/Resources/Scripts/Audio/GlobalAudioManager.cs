@@ -31,6 +31,13 @@ namespace Resources.Scripts.Audio
             RegisterButtonSounds();
         }
 
+        private void Start()
+        {
+            // Автоматически запускаем первый трек при старте, если задан плейлист
+            if (musicPlaylist.Count > 0)
+                PlayMusic(0, loop: true);
+        }
+
         #endregion
 
         [Header("Audio Mixer (Optional)")]
@@ -67,7 +74,7 @@ namespace Resources.Scripts.Audio
         [Tooltip("AudioSource for background music")]
         [SerializeField] private AudioSource musicSource;
         [Tooltip("Playlist for background music")]
-        [SerializeField] private List<AudioClip> musicPlaylist = new();
+        [SerializeField] private List<AudioClip> musicPlaylist = new List<AudioClip>();
         [Tooltip("Music volume (0–1)")]
         [Range(0f, 1f)]
         [SerializeField] private float musicVolume = 1f;
@@ -82,7 +89,9 @@ namespace Resources.Scripts.Audio
 
         private void InitializeSfxSource()
         {
-            sfxSource ??= gameObject.AddComponent<AudioSource>();
+            if (sfxSource == null)
+                sfxSource = gameObject.AddComponent<AudioSource>();
+
             sfxSource.playOnAwake = false;
             sfxSource.volume = defaultSfxVolume;
             if (sfxMixerGroup != null)
@@ -91,10 +100,12 @@ namespace Resources.Scripts.Audio
 
         private void InitializeMusicSource()
         {
-            musicSource ??= gameObject.AddComponent<AudioSource>();
+            if (musicSource == null)
+                musicSource = gameObject.AddComponent<AudioSource>();
+
             musicSource.playOnAwake = false;
             musicSource.loop = false;
-            musicSource.volume = 0f;
+            musicSource.volume = musicVolume; // Устанавливаем заданную громкость
 
             if (audioMixer != null)
             {
@@ -110,7 +121,7 @@ namespace Resources.Scripts.Audio
 
         [Header("Button Bindings")]
         [Tooltip("List of buttons and their click/hover sound settings")]
-        [SerializeField] private List<ButtonAudioConfig> buttonConfigs = new();
+        [SerializeField] private List<ButtonAudioConfig> buttonConfigs = new List<ButtonAudioConfig>();
 
         private void RegisterButtonSounds()
         {
@@ -127,24 +138,25 @@ namespace Resources.Scripts.Audio
             [SerializeField] private AudioClip clickClip;
             [Tooltip("Click volume")]
             [Range(0f, 1f)]
-            [SerializeField] private float clickVolume;
+            [SerializeField] private float clickVolume = 1f;
             [Tooltip("Hover sound")]
             [SerializeField] private AudioClip hoverClip;
             [Tooltip("Hover volume")]
             [Range(0f, 1f)]
-            [SerializeField] private float hoverVolume;
+            [SerializeField] private float hoverVolume = 1f;
 
             public void Register(GlobalAudioManager mgr)
             {
-                if (button == null) return;
+                if (button == null)
+                    return;
 
                 if (clickClip != null)
                     button.onClick.AddListener(() => mgr.PlaySfx(clickClip, clickVolume));
 
                 if (hoverClip != null)
                 {
-                    var trigger = button.GetComponent<EventTrigger>() ??
-                                  button.gameObject.AddComponent<EventTrigger>();
+                    var trigger = button.GetComponent<EventTrigger>()
+                                  ?? button.gameObject.AddComponent<EventTrigger>();
 
                     var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
                     entry.callback.AddListener(_ => mgr.PlaySfx(hoverClip, hoverVolume));
@@ -158,9 +170,10 @@ namespace Resources.Scripts.Audio
         #region SFX & Tick Playback
 
         /// <summary>Plays a UI/SFX sound clip at a specified or default volume.</summary>
-        private void PlaySfx(AudioClip clip, float? volume = null)
+        public void PlaySfx(AudioClip clip, float? volume = null)
         {
-            if (clip == null) return;
+            if (clip == null)
+                return;
 
             if (sfxSource == null)
                 InitializeSfxSource();
@@ -173,7 +186,8 @@ namespace Resources.Scripts.Audio
         /// <summary>Plays a single tick sound with specified pitch.</summary>
         private void PlayTickOnce(float pitch)
         {
-            if (drawingTickClip == null) return;
+            if (drawingTickClip == null)
+                return;
 
             if (sfxSource == null)
                 InitializeSfxSource();
@@ -205,7 +219,8 @@ namespace Resources.Scripts.Audio
 
         private IEnumerator TickRhythmCoroutine(float duration)
         {
-            if (drawingTickClip == null) yield break;
+            if (drawingTickClip == null)
+                yield break;
 
             float startTime = Time.time;
             while (Time.time - startTime < duration)
@@ -256,7 +271,8 @@ namespace Resources.Scripts.Audio
 
         private void PlayMusic(int index = 0, bool loop = true)
         {
-            if (musicPlaylist.Count == 0 || musicSource == null) return;
+            if (musicPlaylist == null || musicPlaylist.Count == 0 || musicSource == null)
+                return;
 
             index = Mathf.Clamp(index, 0, musicPlaylist.Count - 1);
             currentTrackIndex = index;
