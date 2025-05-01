@@ -1,27 +1,42 @@
+using System;
 using UnityEngine;
 
 namespace Resources.Scripts.Data
 {
-    [System.Serializable]
+    [Serializable]
     public class StageData
     {
-        [Header("Общее")]
-        [Tooltip("Название этапа")]
-        public string stageName;
+        #region General
 
-        [Tooltip("Изображение этапа для отображения в меню")]
-        public Sprite stageImage;
+        [Header("General")]
+        [Tooltip("Name of the stage")]
+        public string stageName = string.Empty;
 
-        [Header("Сцены")]
-        [Tooltip("Название сцены арены")]
-        public string arenaSceneName;
-        [Tooltip("Название сцены лабиринта")]
-        public string labyrinthSceneName;
+        [Tooltip("Image representing the stage in the menu")]
+        public Sprite stageImage = null!;
 
-        [Header("Настройки")]
-        [Tooltip("Настройки арены для этого этапа")]
-        public ArenaSettings arenaSettings;
-        [Tooltip("Настройки лабиринта для этого этапа")]
-        public LabyrinthSettings labyrinthSettings;
+        #endregion
+
+        #region Scenes
+
+        [Header("Scenes")]
+        [Tooltip("Name of the arena scene for this stage")]
+        public string arenaSceneName = string.Empty;
+
+        [Tooltip("Name of the labyrinth scene for this stage")]
+        public string labyrinthSceneName = string.Empty;
+
+        #endregion
+
+        #region Settings
+
+        [Header("Settings")]
+        [Tooltip("Arena settings for this stage")]
+        public ArenaSettings arenaSettings = null!;
+
+        [Tooltip("Labyrinth settings for this stage")]
+        public LabyrinthSettings labyrinthSettings = null!;
+
+        #endregion
     }
 }

@@ -1,104 +1,106 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Resources.Scripts.Data; // чтобы получить доступ к ArenaSettings
+using Resources.Scripts.Data;
 
 namespace Resources.Scripts.Fairy
 {
     /// <summary>
-    /// Spawns fairies in the scene at specified intervals, using settings defined in ArenaSettings.
+    /// Spawns fairy prefabs at specified intervals within a defined area.
+    /// Retrieves configuration from an ArenaSettings asset.
     /// </summary>
+    [DisallowMultipleComponent]
     public class FairySpawner : MonoBehaviour
     {
-        [Header("Spawning Settings (from ArenaSettings)")]
-        [SerializeField, Tooltip("Reference to the ArenaSettings asset to retrieve fairy configuration.")]
+        [Header("Spawning Settings")]
+        [SerializeField, Tooltip("ArenaSettings asset supplying fairy count and prefabs.")]
         private ArenaSettings arenaSettings;
 
-        // Локальные переменные для настроек фей.
-        private List<GameObject> fairyPrefabs = new List<GameObject>();
-        private int maxFairies = 5;
-        
-        [SerializeField, Range(1f, 30f), Tooltip("Time interval between spawns in seconds.")]
+        [Header("Spawn Timing")]
+        [SerializeField, Range(1f, 30f), Tooltip("Time between spawns in seconds.")]
         private float spawnInterval = 5f;
-        [SerializeField, Tooltip("Radius of the spawn area offset. Set to 0 for fixed spawn position.")]
+
+        [Header("Spawn Area")]
+        [SerializeField, Tooltip("Radius around spawner for random spawn offset. Zero for fixed position.")]
         private float spawnAreaRadius;
-        [SerializeField, Tooltip("Enable random spawn positions within the defined spawn area.")]
+        [SerializeField, Tooltip("Enable random position within spawn area.")]
         private bool randomizeSpawnPosition;
 
         [Header("Debug Settings")]
-        [SerializeField, Tooltip("Enable debug logging for fairy spawning.")]
+        [SerializeField, Tooltip("Enable debug logging.")]
         private bool debugLog;
 
-        private float timer;
+        // Internal configuration loaded from ArenaSettings.
+        private List<GameObject> fairyPrefabs = new List<GameObject>();
+        private int maxFairies = 5;
 
-        private void Start()
+        // Internal timer for scheduling spawns.
+        private float spawnTimer;
+
+        private void Awake()
         {
-            timer = spawnInterval;
+            // Initialize spawn timer.
+            spawnTimer = spawnInterval;
 
-            if (arenaSettings != null)
+            if (arenaSettings == null)
             {
-                // Используем настройки из ArenaSettings.
-                maxFairies = arenaSettings.fairyCount;
-                if (arenaSettings.fairyPrefabs != null && arenaSettings.fairyPrefabs.Length > 0)
-                {
-                    fairyPrefabs.AddRange(arenaSettings.fairyPrefabs);
-                }
-                else
-                {
-                    Debug.LogWarning("В ArenaSettings не заданы префабы фей.");
-                }
+                Debug.LogWarning($"{nameof(FairySpawner)} requires an ArenaSettings reference.", this);
+                return;
+            }
+
+            maxFairies = Mathf.Max(1, arenaSettings.fairyCount);
+
+            if (arenaSettings.fairyPrefabs != null && arenaSettings.fairyPrefabs.Length > 0)
+            {
+                fairyPrefabs = new List<GameObject>(arenaSettings.fairyPrefabs);
             }
             else
             {
-                Debug.LogWarning("ArenaSettings не назначены в FairySpawner.");
+                Debug.LogWarning("No fairy prefabs defined in ArenaSettings.", this);
             }
         }
 
         /// <summary>
-        /// Spawns a fairy prefab at the spawner's position (optionally randomized).
+        /// Spawns a single fairy prefab at the spawner's location, optionally randomized within the spawn area.
         /// </summary>
-        /// <param name="prefab">The fairy prefab to spawn.</param>
+        /// <param name="prefab">Prefab to instantiate.</param>
         private void Spawn(GameObject prefab)
         {
-            // Проверяем, что список префабов заполнен.
-            if (fairyPrefabs == null || fairyPrefabs.Count == 0)
+            if (prefab == null || fairyPrefabs.Count == 0)
                 return;
 
-            // Не спавним, если достигнуто максимальное количество фей.
             if (transform.childCount >= maxFairies)
                 return;
 
             Vector3 spawnPosition = transform.position;
             if (randomizeSpawnPosition && spawnAreaRadius > 0f)
             {
-                // Вычисляем случайное смещение в пределах заданного радиуса.
-                Vector2 randomOffset = Random.insideUnitCircle * spawnAreaRadius;
-                spawnPosition += new Vector3(randomOffset.x, randomOffset.y, 0f);
+                Vector2 offset = Random.insideUnitCircle * spawnAreaRadius;
+                spawnPosition += new Vector3(offset.x, offset.y, 0f);
             }
 
-            GameObject fairyInstance = Instantiate(prefab, spawnPosition, Quaternion.identity, transform);
-            FairyController fairy = fairyInstance.GetComponent<FairyController>();
-            if (fairy != null)
+            GameObject instance = Instantiate(prefab, spawnPosition, Quaternion.identity, transform);
+            if (instance.TryGetComponent(out FairyController fairy))
             {
                 fairy.Init(spawnPosition);
             }
 
             if (debugLog)
             {
-                Debug.Log("Spawned fairy at position: " + spawnPosition);
+                Debug.Log($"Spawned fairy '{prefab.name}' at {spawnPosition}. Current: {transform.childCount}/{maxFairies}.", this);
             }
         }
 
         private void Update()
         {
-            timer -= Time.deltaTime;
-            if (timer <= 0)
+            if (fairyPrefabs.Count == 0)
+                return;
+
+            spawnTimer -= Time.deltaTime;
+            if (spawnTimer <= 0f)
             {
-                // Выбираем случайный префаб из списка и спавним его.
-                if (fairyPrefabs != null && fairyPrefabs.Count > 0)
-                {
-                    Spawn(fairyPrefabs[Random.Range(0, fairyPrefabs.Count)]);
-                }
-                timer = spawnInterval;
+                int index = Random.Range(0, fairyPrefabs.Count);
+                Spawn(fairyPrefabs[index]);
+                spawnTimer = spawnInterval;
             }
         }
     }

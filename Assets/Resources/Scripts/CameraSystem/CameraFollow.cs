@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Resources.Scripts.CameraSystem // Changed namespace to avoid conflict with UnityEngine.Camera
+namespace Resources.Scripts.CameraSystem
 {
     public class CameraFollow : MonoBehaviour
     {

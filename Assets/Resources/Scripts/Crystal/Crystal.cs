@@ -11,7 +11,7 @@ namespace Resources.Scripts.Crystal
         [SerializeField, Tooltip("Multiplier for the light radius.")] private float radiusMultiplier = 10f;
 
         [Header("Animation Settings")]
-        [SerializeField, Tooltip("Toggle whether to update the light size dynamically.")] private bool dynamicUpdate = false;
+        [SerializeField, Tooltip("Toggle whether to update the light size dynamically.")] private bool dynamicUpdate;
         [SerializeField, Tooltip("Speed at which the light size updates.")] private float updateSpeed = 2f;
 
         private void Start()
@@ -29,12 +29,8 @@ namespace Resources.Scripts.Crystal
                 UpdateSize(newSize);
             }
         }
-
-        /// <summary>
-        /// Updates the crystal light's radius based on the provided size.
-        /// </summary>
-        /// <param name="newSize">New size value for the crystal.</param>
-        public void UpdateSize(float newSize)
+        
+        private void UpdateSize(float newSize)
         {
             size = newSize;
             if (crystalLight != null)

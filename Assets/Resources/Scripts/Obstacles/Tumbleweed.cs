@@ -17,8 +17,8 @@ public class Tumbleweed : MonoBehaviour
     private Vector3 moveDirection;
     private float lifeTime;
     private SpriteRenderer spriteRenderer;
-    private bool isFading = false;
-    private float fadeTimer = 0f;
+    private bool isFading;
+    private float fadeTimer;
 
     void Start()
     {
