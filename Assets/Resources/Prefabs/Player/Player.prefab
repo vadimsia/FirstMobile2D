@@ -1113,6 +1113,7 @@ GameObject:
   - component: {fileID: 7161899701119650399}
   - component: {fileID: 2103961747317735164}
   - component: {fileID: 1957564526145093592}
+  - component: {fileID: 1901290873122885768}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1232,7 +1233,12 @@ MonoBehaviour:
   maxLightRange: 2
   isImmortal: 1
   animator: {fileID: 2103961747317735164}
+  spriteRenderer: {fileID: 0}
+  rollSprite: {fileID: 0}
   maxDarkSkullHits: 2
+  rollSpeed: 6
+  rollDuration: 0.3
+  rollCooldown: 2
 --- !u!50 &3017650857843441594
 Rigidbody2D:
   serializedVersion: 5
@@ -1342,15 +1348,27 @@ MonoBehaviour:
   stopTimeThreshold: 0.5
   minPointsForRecognition: 10
   minTotalPathLength: 1
-  manaSpendEffectPrefab: {fileID: 1084327597910860270, guid: f8bd385ff85ec514ea38a03e711982ba, type: 3}
-  manaBarUI: {fileID: 0}
-  mainCanvas: {fileID: 0}
+  enableComboMode: 1
+  comboTimeWindow: 3
   gestureRecognizer: {fileID: 0}
   resampleCount: 64
   smoothingWindow: 3
   playerStatsHandler: {fileID: 2458575810279814847}
-  enableComboMode: 1
-  comboTimeWindow: 3
+  manaSpendEffectPrefab: {fileID: 1084327597910860270, guid: f8bd385ff85ec514ea38a03e711982ba, type: 3}
+  manaBarUI: {fileID: 0}
+  mainCanvas: {fileID: 0}
+--- !u!114 &1901290873122885768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7684459473974908381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44b13eb25f1aef9468bafa2306b151ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7686015707831549786
 GameObject:
   m_ObjectHideFlags: 0

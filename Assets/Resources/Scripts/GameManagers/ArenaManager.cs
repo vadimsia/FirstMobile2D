@@ -198,6 +198,7 @@ namespace Resources.Scripts.GameManagers
                             Random.Range(-half, half), 0f)
                     };
 
+                    // небольшой джиттер по краям
                     pos.x += Random.Range(-currentSettings.edgeTreeJitterRange.x, currentSettings.edgeTreeJitterRange.x);
                     pos.y += Random.Range(-currentSettings.edgeTreeJitterRange.y, currentSettings.edgeTreeJitterRange.y);
 
@@ -206,6 +207,7 @@ namespace Resources.Scripts.GameManagers
                     float scale = Random.Range(currentSettings.edgeTreeScaleRange.x, currentSettings.edgeTreeScaleRange.y);
                     tree.transform.localScale = Vector3.one * scale;
 
+                    // проверка, чтобы деревья не наслаивались друг на друга
                     var trigger = tree.GetComponentsInChildren<CircleCollider2D>()
                         .FirstOrDefault(c => c.isTrigger);
 
@@ -240,18 +242,32 @@ namespace Resources.Scripts.GameManagers
 
         private void FinalizeTree(GameObject tree)
         {
+            // отключаем коллайдеры, если нужно
             if (currentSettings.disableEdgeTreeColliders)
             {
                 foreach (var col in tree.GetComponentsInChildren<Collider>())
                     col.enabled = false;
             }
 
-            var sr = tree.GetComponentInChildren<SpriteRenderer>();
-            if (sr == null) return;
-
+            // находим все SpriteRenderer в дереве (должно быть два в дочерних объектах)
+            var renderers = tree.GetComponentsInChildren<SpriteRenderer>();
             float y = tree.transform.position.y;
             float t = Mathf.InverseLerp(spawnArea, -spawnArea, y);
-            sr.sortingOrder = Mathf.RoundToInt(Mathf.Lerp(1, 300, t));
+            int baseOrder = Mathf.RoundToInt(Mathf.Lerp(1, 300, t));
+
+            if (renderers.Length >= 2)
+            {
+                // предполагается, что в иерархии первым идёт нижняя часть, вторым — крона
+                var bottomSR = renderers[0];
+                var topSR = renderers[1];
+                bottomSR.sortingOrder = baseOrder;
+                topSR.sortingOrder = baseOrder + 1000; // всегда поверх игрока
+            }
+            else if (renderers.Length == 1)
+            {
+                // fallback на один спрайт
+                renderers[0].sortingOrder = baseOrder;
+            }
         }
 
         private void Update()
