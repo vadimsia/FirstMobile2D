@@ -1,6 +1,6 @@
-using Resources.Scripts.Player;
 using UnityEngine;
 using System.Collections;
+using Resources.Scripts.Player;
 
 namespace Resources.Scripts.Enemy
 {
@@ -126,9 +126,9 @@ namespace Resources.Scripts.Enemy
 
         #region Private Fields
 
-        
         private Rigidbody2D rb;
         private PlayerController player;
+        private PlayerStatsHandler playerStats;
         private bool isAttacking;
         private float lastAttackTime;
         private Vector3 spawnPoint;
@@ -149,8 +149,9 @@ namespace Resources.Scripts.Enemy
         private void Start()
         {
             spawnPoint = transform.position;
-            
-            player = GameObject.FindWithTag("Player")?.GetComponent<PlayerController>();
+            player = GameObject.FindGameObjectWithTag("Player")?.GetComponent<PlayerController>();
+            if (player != null)
+                playerStats = player.GetComponent<PlayerStatsHandler>();
 
             if (spriteRenderer == null)
                 spriteRenderer = GetComponent<SpriteRenderer>();
@@ -245,7 +246,7 @@ namespace Resources.Scripts.Enemy
         {
             float dx = targetPosition.x - transform.position.x;
             transform.eulerAngles = dx < 0
-                ? new Vector3(0, 0, 0)
+                ? Vector3.zero
                 : new Vector3(0, 180, 0);
         }
 
@@ -278,7 +279,6 @@ namespace Resources.Scripts.Enemy
                     if (sinceLast >= trollAttackCooldownTime)
                         StartCoroutine(PerformTrollAttack());
                     break;
-                case EnemyType.Standard:
                 default:
                     if (sinceLast >= attackCooldown)
                         StartCoroutine(PerformStandardAttack());
@@ -290,33 +290,32 @@ namespace Resources.Scripts.Enemy
         {
             isAttacking = true;
             lastAttackTime = Time.time;
-            float orig = speed;
+            float origSpeed = speed;
             speed = 0f;
             animator?.Play(attackAnimationName);
 
             yield return new WaitForSeconds(attackCooldown);
 
-            // Наносим урон игроку
+            // Наносим урон через TakeDamage (с учётом TryEvade)
             player.TakeDamage(this);
-            if (debugLog) Debug.Log($"{enemyName} стандартный удар.");
+            if (debugLog) Debug.Log($"{enemyName} Standard attack.");
 
-            // Пуш вручную через Transform
+            // Отталкивание
             if (pushPlayer)
             {
                 Vector3 dir = (player.transform.position - transform.position).normalized;
                 player.transform.position += dir * pushForceMultiplier;
             }
 
-            speed = orig;
+            speed = origSpeed;
             isAttacking = false;
-            UpdateAnimationState();
         }
 
         private IEnumerator PerformGoblinAttack()
         {
             isAttacking = true;
             lastAttackTime = Time.time;
-            float orig = speed;
+            float origSpeed = speed;
             speed = 0f;
             animator?.Play(attackAnimationName);
 
@@ -324,16 +323,15 @@ namespace Resources.Scripts.Enemy
 
             SpawnProjectileEvent();
 
-            speed = orig;
+            speed = origSpeed;
             isAttacking = false;
-            UpdateAnimationState();
         }
 
         private IEnumerator PerformDarkSkullAttack()
         {
             isAttacking = true;
             lastAttackTime = Time.time;
-            float orig = speed;
+            float origSpeed = speed;
             speed = 0f;
             animator?.Play(attackAnimationName);
 
@@ -341,16 +339,15 @@ namespace Resources.Scripts.Enemy
 
             RegisterDarkSkullHitEvent();
 
-            speed = orig;
+            speed = origSpeed;
             isAttacking = false;
-            UpdateAnimationState();
         }
 
         private IEnumerator PerformTrollAttack()
         {
             isAttacking = true;
             lastAttackTime = Time.time;
-            float orig = speed;
+            float origSpeed = speed;
             speed = 0f;
             animator?.Play(attackAnimationName);
 
@@ -358,9 +355,8 @@ namespace Resources.Scripts.Enemy
 
             RegisterTrollHitEvent();
 
-            speed = orig;
+            speed = origSpeed;
             isAttacking = false;
-            UpdateAnimationState();
         }
 
         #endregion
@@ -386,24 +382,28 @@ namespace Resources.Scripts.Enemy
                 proj.transform.localScale = goblinProjectileScale;
                 if (proj.TryGetComponent<GoblinProjectile>(out var gp))
                 {
-                    gp.SetParameters(dir, projectileSpeed,
-                        bindingDuration,
-                        goblinProjectileLifeTime,
-                        goblinProjectileDamage);
+                    gp.SetParameters(dir, projectileSpeed, bindingDuration, goblinProjectileLifeTime, goblinProjectileDamage);
                 }
                 else if (proj.TryGetComponent<Rigidbody2D>(out var prb))
                 {
                     prb.AddForce(dir * projectileSpeed, ForceMode2D.Impulse);
                 }
             }
-            else Debug.LogWarning($"[{enemyName}] Нет префаба снаряда");
+            else
+            {
+                Debug.LogWarning($"[{enemyName}] Projectile prefab not set");
+            }
         }
 
         public void RegisterDarkSkullHitEvent()
         {
-            if (!isPlayerInTrigger) return;
+            if (!isPlayerInTrigger || playerStats == null) return;
 
-            // Прямой вызов урона
+            // Попытка уклонения
+            if (playerStats.TryEvade(transform.position))
+                return;
+
+            // Наносим урон DarkSkull
             player.ReceiveDarkSkullHit();
             if (pushPlayer)
             {
@@ -414,8 +414,13 @@ namespace Resources.Scripts.Enemy
 
         public void RegisterTrollHitEvent()
         {
-            if (!isPlayerInTrigger) return;
+            if (!isPlayerInTrigger || playerStats == null) return;
 
+            // Попытка уклонения
+            if (playerStats.TryEvade(transform.position))
+                return;
+
+            // Наносим урон Troll
             player.ReceiveTrollHit();
             if (pushPlayer)
             {
@@ -444,22 +449,6 @@ namespace Resources.Scripts.Enemy
         public void ApplyPush(Vector2 force)
         {
             rb.AddForce(force, ForceMode2D.Impulse);
-        }
-
-        private void UpdateAnimationState()
-        {
-            if (player == null)
-            {
-                animator?.Play(walkAnimationName);
-                return;
-            }
-
-            float dist = Vector3.Distance(transform.position, player.transform.position);
-            if (dist <= detectionRange)
-            {
-                animator?.Play(dist <= attackRange ? idleAnimationName : walkAnimationName);
-            }
-            else animator?.Play(idleAnimationName);
         }
 
         #endregion

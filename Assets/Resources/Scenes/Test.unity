@@ -358,6 +358,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2458575810279814847, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: baseEvasionChance
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 2992285719649780434, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_Sprite
       value: 

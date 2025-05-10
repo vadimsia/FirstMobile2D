@@ -1,99 +1,223 @@
 using UnityEngine;
+using TMPro;
 
 namespace Resources.Scripts.Player
 {
     /// <summary>
-    /// Handles the player's stats, including health, mana, and fairy collection.
+    /// Хранит и обновляет состояние здоровья, маны и собранных фей.
+    /// Также даёт возможность уклоняться и отображать UI-текст уклонения на Canvas.
+    /// Поддерживает процентные бонусы к скорости передвижения и позволяет в инспекторе видеть текущую скорость.
     /// </summary>
     public class PlayerStatsHandler : MonoBehaviour
     {
         [Header("Fairy Collection")]
-        [SerializeField, Tooltip("Number of fairies collected by the player.")]
-        public int FairyCount { get; set; }
+        [SerializeField, Tooltip("Количество собранных фей")]
+        private int fairyCount;
+        public int FairyCount
+        {
+            get => fairyCount;
+            set => fairyCount = Mathf.Max(0, value);
+        }
 
         [Header("Health Settings")]
-        [SerializeField, Range(5, 50), Tooltip("Initial health of the player.")]
+        [SerializeField, Range(5, 50), Tooltip("Текущее здоровье игрока")]
         private int health = 20;
-        [SerializeField, Tooltip("Maximum health of the player.")]
+        [SerializeField, Tooltip("Максимальное здоровье игрока")]
         private int maxHealth = 50;
-
-        /// <summary>
-        /// Gets or sets the player's health, clamped between 0 and maxHealth.
-        /// </summary>
         public int Health
         {
-            get { return health; }
-            set { health = Mathf.Clamp(value, 0, maxHealth); }
+            get => health;
+            set => health = Mathf.Clamp(value, 0, maxHealth);
         }
 
         [Header("Mana Settings")]
-        [SerializeField, Tooltip("Maximum mana available to the player.")]
+        [SerializeField, Tooltip("Максимальная мана")]
         private float maxMana = 100f;
-        [SerializeField, Tooltip("Current mana available to the player.")]
+        [SerializeField, Tooltip("Текущая мана")]
         private float currentMana;
-        [SerializeField, Tooltip("Rate at which mana regenerates per second.")]
+        [SerializeField, Tooltip("Скорость восстановления маны в секунду")]
         private float manaRegenRate = 10f;
 
-        // Timer for delaying mana regeneration after spell usage.
+        [Header("Mana Regen Delay")]
+        [SerializeField, Tooltip("Задержка после использования перед регеном маны")]
+        private float manaRegenDelayAfterSpell = 2f;
         private float manaRegenDelayTimer;
-        // Constant delay time (in seconds) after mana usage.
-        private const float ManaRegenDelayAfterSpell = 2f;
 
-        /// <summary>
-        /// Gets the current mana.
-        /// </summary>
-        public float CurrentMana => currentMana;
+        [Header("Movement Settings")]
+        [SerializeField, Tooltip("Базовая скорость движения")]
+        private float baseMoveSpeed = 5f;
+        [SerializeField, Tooltip("Текущий итоговый скорость (с учётом перков)")]
+        private float currentMoveSpeed;
+        private float moveSpeedPercentBonus;  // бонус в процентах
 
-        /// <summary>
-        /// Gets the maximum mana.
-        /// </summary>
-        public float MaxMana => maxMana;
+        [Header("Evasion Settings")]
+        [SerializeField, Range(0f, 100f), Tooltip("Текущий шанс уклонения (%)")]
+        private float baseEvasionChance = 10f;
+        [SerializeField, Tooltip("Кулдаун между уклонениями (сек)")]
+        private float evasionCooldown = 1f;
+        [SerializeField, Tooltip("Префаб UI-текста для отображения уклонения (TextMeshProUGUI)")]
+        private GameObject evasionTextPrefab;
+        private float evasionCooldownTimer;
+
+        // Сохранённые дефолты для сброса
+        private float defaultMaxMana;
+        private float defaultManaRegenDelay;
+        private float defaultBaseMoveSpeed;
+        private float defaultEvasionChance;
+
+        private void Awake()
+        {
+            defaultMaxMana = maxMana;
+            defaultManaRegenDelay = manaRegenDelayAfterSpell;
+            defaultBaseMoveSpeed = baseMoveSpeed;
+            defaultEvasionChance = baseEvasionChance;
+            currentMana = maxMana;
+            UpdateCurrentMoveSpeed();
+        }
 
         private void Update()
         {
-            // Count down mana regeneration delay if active.
-            if (manaRegenDelayTimer > 0)
-            {
+            // Реген маны
+            if (manaRegenDelayTimer > 0f)
                 manaRegenDelayTimer -= Time.deltaTime;
-            }
             else
-            {
                 RegenerateMana();
-            }
+
+            // Кулдаун уклонения
+            if (evasionCooldownTimer > 0f)
+                evasionCooldownTimer -= Time.deltaTime;
         }
 
-        /// <summary>
-        /// Regenerates mana over time, ensuring it does not exceed maxMana.
-        /// </summary>
         private void RegenerateMana()
         {
             currentMana = Mathf.Min(currentMana + manaRegenRate * Time.deltaTime, maxMana);
         }
 
-        /// <summary>
-        /// Attempts to use a specified amount of mana.
-        /// Returns true if successful and triggers a regeneration delay.
-        /// </summary>
-        /// <param name="amount">Amount of mana to use.</param>
-        /// <returns>True if mana is successfully used; otherwise, false.</returns>
         public bool UseMana(float amount)
         {
             if (currentMana >= amount)
             {
                 currentMana -= amount;
-                manaRegenDelayTimer = ManaRegenDelayAfterSpell;
+                manaRegenDelayTimer = manaRegenDelayAfterSpell;
                 return true;
             }
             return false;
         }
 
-        /// <summary>
-        /// Restores a specified amount of mana.
-        /// </summary>
-        /// <param name="amount">Amount of mana to restore.</param>
         public void RestoreMana(float amount)
         {
             currentMana = Mathf.Min(currentMana + amount, maxMana);
+        }
+
+        /// <summary>
+        /// Сбрасывает все модификаторы к дефолту.
+        /// </summary>
+        public void ResetStats()
+        {
+            maxMana = defaultMaxMana;
+            manaRegenDelayAfterSpell = defaultManaRegenDelay;
+            baseMoveSpeed = defaultBaseMoveSpeed;
+            moveSpeedPercentBonus = 0f;
+            baseEvasionChance = defaultEvasionChance;
+            evasionCooldownTimer = 0f;
+            currentMana = Mathf.Min(currentMana, maxMana);
+            UpdateCurrentMoveSpeed();
+        }
+
+        public void ModifyManaRegenDelay(float reduction)
+        {
+            manaRegenDelayAfterSpell = Mathf.Max(0f, manaRegenDelayAfterSpell - reduction);
+        }
+
+        public void ModifyMaxMana(float extra)
+        {
+            maxMana = defaultMaxMana + extra;
+            currentMana = Mathf.Min(currentMana, maxMana);
+        }
+
+        /// <summary>
+        /// Добавляет процентный бонус к скорости передвижения.
+        /// </summary>
+        public void ModifyMoveSpeedPercent(float percentBonus)
+        {
+            moveSpeedPercentBonus += percentBonus;
+            UpdateCurrentMoveSpeed();
+        }
+
+        /// <summary>
+        /// Пересчитывает и сохраняет текущую итоговую скорость.
+        /// </summary>
+        private void UpdateCurrentMoveSpeed()
+        {
+            currentMoveSpeed = baseMoveSpeed * (1f + moveSpeedPercentBonus / 100f);
+        }
+
+        /// <summary>
+        /// Возвращает итоговую скорость с учётом процентных бонусов.
+        /// </summary>
+        public float GetTotalMoveSpeed()
+        {
+            return currentMoveSpeed;
+        }
+
+        public void ModifyEvasion(float bonus)
+        {
+            baseEvasionChance += bonus;
+        }
+
+        public float CurrentMana => currentMana;
+        public float MaxMana => maxMana;
+
+        /// <summary>
+        /// Пытается уклониться от удара в точке worldPosition.
+        /// </summary>
+        public bool TryEvade(Vector3 worldPosition)
+        {
+            if (evasionCooldownTimer > 0f)
+                return false;
+
+            bool evaded = Random.value <= baseEvasionChance / 100f;
+            if (evaded)
+            {
+                ShowEvasionText(worldPosition);
+                evasionCooldownTimer = evasionCooldown;
+            }
+            return evaded;
+        }
+
+        /// <summary>
+        /// Инстанцирует UI-текст в Canvas и позиционирует его над игроком.
+        /// </summary>
+        private void ShowEvasionText(Vector3 worldPosition)
+        {
+            if (evasionTextPrefab == null)
+                return;
+
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("EvasionText: Canvas не найден в сцене");
+                return;
+            }
+
+            GameObject go = Instantiate(evasionTextPrefab, canvas.transform, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            TMP_Text tmp = go.GetComponent<TMP_Text>();
+            if (rt == null || tmp == null)
+            {
+                Debug.LogError("EvasionTextPrefab должен иметь RectTransform и TMP_Text");
+                Destroy(go);
+                return;
+            }
+
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, worldPosition);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvas.transform as RectTransform,
+                screenPoint,
+                canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera,
+                out Vector2 localPoint);
+
+            rt.anchoredPosition = localPoint;
         }
     }
 }

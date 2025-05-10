@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f5f700c261db4a428ee9767ed69b429, type: 3}
+  m_Name: Stage1
+  m_EditorClassIdentifier: 
+  stageName: "1 \u044D\u0442\u0430\u043F"
+  stageImage: {fileID: 0}
+  arenaSceneNames:
+  - Arena1
+  - Arena2
+  arenaSettingsList:
+  - {fileID: 11400000, guid: c9f0ecfe55c4d0b48af3d0004abbf88c, type: 2}
+  - {fileID: 11400000, guid: 50e8c44bb8294f642a131d31588aa0a4, type: 2}
+  labyrinthSceneName: Labyrinth1
+  labyrinthSettings: {fileID: 11400000, guid: 702939bdeb212ec498f4019ff898cc0f, type: 2}
