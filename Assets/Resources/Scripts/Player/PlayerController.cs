@@ -1,33 +1,31 @@
-// Resources/Scripts/Player/PlayerController.cs
 using UnityEngine;
 using System;
 using System.Collections;
 using Resources.Scripts.Enemy;
 using Resources.Scripts.Fairy;
 using Resources.Scripts.Misc;
-using UnityEngine.Rendering.Universal; // For Light2D
+using UnityEngine.Rendering.Universal;
 using Resources.Scripts.Labyrinth;
+
 
 namespace Resources.Scripts.Player
 {
     /// <summary>
     /// Controls player movement, interactions, dynamic light range based on proximity to the finish point,
-    /// handles animation switching and dodge roll functionality with cooldown.
+    /// handles animation switching, dodge roll functionality with cooldown, and evasion mechanic.
+    /// Теперь использует единую скорость из PlayerStatsHandler и отображает реальную скорость в инспекторе.
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
         #region Constants
-
         private const string IdleAnimationName = "Idle";
         private const string RunAnimationName = "Run";
-
         #endregion
 
         #region Inspector Fields
-
         [Header("Movement Settings")]
-        [SerializeField, Range(1, 10)] private float keyboardSpeed = 3f;
-        [SerializeField, Range(1, 10)] private float joystickSpeed = 3f;
+        [SerializeField, Tooltip("Текущая скорость передвижения (для отладки)")]
+        private float currentSpeed;
         [SerializeField] private PlayerJoystick joystick;
         [SerializeField] private GameObject trapPrefab;
 
@@ -52,21 +50,14 @@ namespace Resources.Scripts.Player
         [SerializeField, Tooltip("Скорость кувырка")] private float rollSpeed = 6f;
         [SerializeField, Tooltip("Длительность кувырка (сек)")] private float rollDuration = 0.3f;
         [SerializeField, Tooltip("Кулдаун между кувырками (сек)")] private float rollCooldown = 2f;
-
         #endregion
 
         #region Public Events & Properties
-
-        /// <summary>Нормализованное значение (0–1) оставшегося кулдауна кувырка</summary>
         public event Action<float> OnRollCooldownChanged;
-
-        /// <summary>Длительность кулдауна для UI</summary>
         public float RollCooldownDuration => rollCooldown;
-
         #endregion
 
         #region Private Fields
-
         private PlayerStatsHandler playerStats;
         private float currentSlowMultiplier = 1f;
         private Coroutine slowCoroutine;
@@ -80,15 +71,14 @@ namespace Resources.Scripts.Player
         private Sprite originalSprite;
 
         private float rollCooldownRemaining;
-
         #endregion
 
         #region Unity Methods
-
         private void Start()
         {
             playerStats = GetComponent<PlayerStatsHandler>();
             if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+            UpdateCurrentSpeedDisplay();
 
             if (finishPoint != null)
                 initialDistance = Vector2.Distance(transform.position, finishPoint.position);
@@ -104,7 +94,6 @@ namespace Resources.Scripts.Player
             UpdateLightOuterRange();
             TickRollCooldown();
 
-            // Клавиша для теста кувырка
             if (Input.GetKeyDown(KeyCode.LeftShift))
                 TryRoll();
         }
@@ -118,11 +107,9 @@ namespace Resources.Scripts.Player
                 playerStats.RestoreMana(20f);
             }
         }
-
         #endregion
 
         #region Movement Methods
-
         private void UpdateMovement()
         {
             if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
@@ -136,12 +123,13 @@ namespace Resources.Scripts.Player
             if (dir.magnitude > 0.1f)
                 lastMoveDirection = dir.normalized;
 
-            float speed = (joystick != null ? joystickSpeed : keyboardSpeed) * currentSlowMultiplier;
-            float delta = speed * Time.deltaTime;              // multiply floats first for efficiency
-            Vector2 move = dir * delta;
-            transform.Translate(move, Space.World);
+            // Всегда используем единую скорость из PlayerStatsHandler
+            float speed = playerStats.GetTotalMoveSpeed() * currentSlowMultiplier;
+            UpdateCurrentSpeedDisplay(speed);
 
-            if (move == Vector2.zero)
+            transform.Translate(dir * speed * Time.deltaTime, Space.World);
+
+            if (dir == Vector2.zero)
                 animator.Play(IdleAnimationName);
             else
             {
@@ -150,11 +138,13 @@ namespace Resources.Scripts.Player
             }
         }
 
+        private void UpdateCurrentSpeedDisplay(float speed = -1f)
+        {
+            currentSpeed = speed < 0f ? playerStats.GetTotalMoveSpeed() : speed;
+        }
         #endregion
 
         #region Dodge Roll
-
-        /// <summary>Публичный метод для вызова кувырка (из UI или кода)</summary>
         public void TryRoll()
         {
             if (!canRoll || isRolling) return;
@@ -165,12 +155,9 @@ namespace Resources.Scripts.Player
         {
             isRolling = true;
             canRoll = false;
-
-            // Инициализируем кулдаун
             rollCooldownRemaining = rollCooldown;
             OnRollCooldownChanged?.Invoke(1f);
 
-            // Смена спрайта и блокировка аниматора
             animator.enabled = false;
             originalSprite = spriteRenderer.sprite;
             spriteRenderer.sprite = rollSprite;
@@ -182,20 +169,17 @@ namespace Resources.Scripts.Player
             float t = 0f;
             while (t < rollDuration)
             {
-                float rollDelta = rollSpeed * Time.deltaTime;      // multiply floats first for efficiency
-                transform.Translate(dir * rollDelta, Space.World);
+                transform.Translate(dir * rollSpeed * Time.deltaTime, Space.World);
                 transform.Rotate(0f, 0f, rotSpeed * Time.deltaTime);
                 t += Time.deltaTime;
                 yield return null;
             }
 
-            // Сброс состояния
             spriteRenderer.sprite = originalSprite;
             transform.rotation = Quaternion.identity;
             animator.enabled = true;
             isRolling = false;
 
-            // Ждём окончания оставшегося кулдауна
             yield return new WaitForSeconds(rollCooldownRemaining);
             canRoll = true;
         }
@@ -203,16 +187,13 @@ namespace Resources.Scripts.Player
         private void TickRollCooldown()
         {
             if (rollCooldownRemaining <= 0f) return;
-
             rollCooldownRemaining -= Time.deltaTime;
             if (rollCooldownRemaining < 0f) rollCooldownRemaining = 0f;
             OnRollCooldownChanged?.Invoke(rollCooldownRemaining / rollCooldown);
         }
-
         #endregion
 
         #region Light Methods
-
         private void UpdateLightOuterRange()
         {
             if (finishPoint == null || playerLight == null || initialDistance <= 0f) return;
@@ -234,21 +215,25 @@ namespace Resources.Scripts.Player
                 yield return null;
             }
         }
-
         #endregion
 
-        #region Damage and Effects
-
+        #region Damage and Evasion
         public void TakeDamage(EnemyController enemy)
         {
             if (isImmortal || isRolling) return;
-            var stats = enemy.GetComponent<EnemyStatsHandler>();
-            playerStats.Health -= stats.Damage;
+
+            if (playerStats.TryEvade(transform.position))
+                return;
+
+            playerStats.Health -= enemy.GetComponent<EnemyStatsHandler>().Damage;
             if (playerStats.Health <= 0) { Die(); return; }
+
             if (enemy.pushPlayer)
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
         }
+        #endregion
 
+        #region Other Effects
         public void ApplySlow(float factor, float duration)
         {
             if (slowCoroutine != null) StopCoroutine(slowCoroutine);
@@ -262,7 +247,11 @@ namespace Resources.Scripts.Player
             currentSlowMultiplier = 1f;
         }
 
-        public void ApplyBinding(float duration) => StartCoroutine(BindingCoroutine(duration));
+        public void ApplyBinding(float duration)
+        {
+            StartCoroutine(BindingCoroutine(duration));
+        }
+
         private IEnumerator BindingCoroutine(float duration)
         {
             float orig = currentSlowMultiplier;
@@ -271,7 +260,11 @@ namespace Resources.Scripts.Player
             currentSlowMultiplier = orig;
         }
 
-        public void Stun(float duration) => StartCoroutine(StunCoroutine(duration));
+        public void Stun(float duration)
+        {
+            StartCoroutine(StunCoroutine(duration));
+        }
+
         private IEnumerator StunCoroutine(float duration)
         {
             float orig = currentSlowMultiplier;
@@ -289,10 +282,12 @@ namespace Resources.Scripts.Player
         private IEnumerator SpeedBoostCoroutine(float mult, float duration)
         {
             bonusActive = true;
-            float orig = joystickSpeed;
-            joystickSpeed *= mult;
+            float origSpeed = playerStats.GetTotalMoveSpeed();
+            playerStats.ModifyMoveSpeedPercent((mult - 1f) * 100f);
+            UpdateCurrentSpeedDisplay();
             yield return new WaitForSeconds(duration);
-            joystickSpeed = orig;
+            playerStats.ResetStats();
+            UpdateCurrentSpeedDisplay();
             bonusActive = false;
         }
 
@@ -302,20 +297,19 @@ namespace Resources.Scripts.Player
             if (darkSkullHitCount >= maxDarkSkullHits) Die();
         }
 
-        public void ReceiveTrollHit() => Die();
+        public void ReceiveTrollHit()
+        {
+            Die();
+        }
 
         private void Die()
         {
-            
             var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(
-                FindObjectsInactive.Include, FindObjectsSortMode.None);
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
             foreach (var canvas in allCanvases)
-            {
                 canvas.gameObject.SetActive(false);
-            }
             Destroy(gameObject);
         }
-
         #endregion
     }
 }
