@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4037594709924466856
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3036163794358431572}
+  - component: {fileID: 73796394299859957}
+  m_Layer: 0
+  m_Name: StageProgressionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3036163794358431572
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4037594709924466856}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.5000272, y: 10.301018, z: -8.005087}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &73796394299859957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4037594709924466856}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28ebcd282af286c4ca375c363c2b0031, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  availablePerks:
+  - {fileID: 11400000, guid: a23c8ad9db1b25a44a37897b55bb348a, type: 2}
+  - {fileID: 11400000, guid: c59875862f551424ebf79ccf1d602968, type: 2}
+  - {fileID: 11400000, guid: 591ab4ded443531458faaf990056fede, type: 2}
+  - {fileID: 11400000, guid: c68596ce48525ff40a13c52d96f0e220, type: 2}
+  - {fileID: 11400000, guid: 3916642b676939f48b9e1c4e8bc42dfe, type: 2}
+  - {fileID: 11400000, guid: d538e31e52551d14092e51610639973c, type: 2}
+  - {fileID: 11400000, guid: 8dc76e25d7397d9488613787b7e81b5e, type: 2}
+  - {fileID: 11400000, guid: b6d6cd15d8dbafe4889fcc130bb2f327, type: 2}
+  - {fileID: 11400000, guid: b3fe67efefe24944d83d0242755a92b5, type: 2}
+  - {fileID: 11400000, guid: c0ce9bd1c81c9e444a7ae8086c66dd22, type: 2}
+  - {fileID: 11400000, guid: b15d4ed55e83a7d4daddd69e9818ee32, type: 2}
+  - {fileID: 11400000, guid: 5af0fe4c74d3b6c4a939818e76aab6da, type: 2}
+  perkSelectionPanelPrefab: {fileID: 5462093637286728995, guid: 95beb444da4fed240812e7f15fea637e, type: 3}

@@ -1,8 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.SceneManagement;
 using Resources.Scripts.Data;
+using Resources.Scripts.GameManagers;
+using Resources.Scripts.UI;
+using System.Collections;
 
 namespace Resources.Scripts.Menu
 {
@@ -18,12 +20,16 @@ namespace Resources.Scripts.Menu
 
         [Header("Фон панели")]
         [SerializeField] private Image panelBackground;
-        [SerializeField] private Sprite[] backgroundSprites; // 0 — лес, 1 — песок и т.д.
+        [SerializeField] private Sprite[] backgroundSprites;
 
         [Header("Данные этапов")]
         [SerializeField] private StageData[] stages;
 
-        private int currentStageIndex = 0;
+        [Header("Панель загрузки")]
+        [Tooltip("Controller для панели загрузки с CanvasGroup и анимацией точек")]
+        [SerializeField] private LoadingPanelController loadingPanelController;
+
+        private int currentStageIndex;
 
         private void Start()
         {
@@ -32,29 +38,22 @@ namespace Resources.Scripts.Menu
             rightButton.onClick.AddListener(OnRightButton);
             playButton.onClick.AddListener(OnPlayButton);
             closeButton.onClick.AddListener(OnCloseButton);
+
+            if (loadingPanelController != null)
+                loadingPanelController.gameObject.SetActive(false);
         }
 
         private void UpdateStageDisplay()
         {
-            if (stages == null || stages.Length == 0)
-                return;
-
-            // Обновляем название и картинку этапа
-            StageData currentStage = stages[currentStageIndex];
-            stageNameText.text = currentStage.stageName;
-            stageImage.sprite = currentStage.stageImage;
-
-            // Меняем фон панели в соответствии с индексом
-            if (backgroundSprites != null &&
-                currentStageIndex < backgroundSprites.Length &&
-                panelBackground != null)
-            {
-                panelBackground.sprite = backgroundSprites[currentStageIndex];
-            }
-
-            // Делаем кнопки навигации активными/неактивными
-            leftButton.interactable = currentStageIndex > 0;
+            if (stages == null || stages.Length == 0) return;
+            var stage = stages[currentStageIndex];
+            stageNameText.text   = stage.stageName;
+            stageImage.sprite    = stage.stageImage;
+            leftButton.interactable  = currentStageIndex > 0;
             rightButton.interactable = currentStageIndex < stages.Length - 1;
+            if (panelBackground != null &&
+                currentStageIndex < backgroundSprites.Length)
+                panelBackground.sprite = backgroundSprites[currentStageIndex];
         }
 
         private void OnLeftButton()
@@ -77,15 +76,36 @@ namespace Resources.Scripts.Menu
 
         private void OnPlayButton()
         {
-            // Сохраняем выбранный этап в глобальный менеджер
+            // Показываем панель загрузки с анимацией
+            loadingPanelController?.Show();
+
+            // Сохраняем выбранный этап
             GameStageManager.currentStageData = stages[currentStageIndex];
-            // Загружаем сцену арены выбранного этапа
-            SceneManager.LoadScene(GameStageManager.currentStageData.arenaSceneName);
+            
+            if (StageProgressionManager.Instance == null)
+            {
+                var go = new GameObject("StageProgressionManager");
+                go.AddComponent<StageProgressionManager>();
+            }
+
+            // Запускаем с задержкой, чтобы панель оставалась видимой 2 секунды
+            StartCoroutine(StartStageWithDelay());
+        }
+
+        private IEnumerator StartStageWithDelay()
+        {
+            // Ждём один кадр, чтобы Show() успел отработать
+            yield return null;
+
+            // Дополнительная задержка 2 секунды
+            yield return new WaitForSecondsRealtime(2f);
+
+            // Запуск этапов
+            StageProgressionManager.Instance.StartStage();
         }
 
         private void OnCloseButton()
         {
-            // Закрыть панель выбора этапов
             gameObject.SetActive(false);
         }
     }
