@@ -7,13 +7,10 @@ using Resources.Scripts.Misc;
 using UnityEngine.Rendering.Universal;
 using Resources.Scripts.Labyrinth;
 
-
 namespace Resources.Scripts.Player
 {
     /// <summary>
-    /// Controls player movement, interactions, dynamic light range based on proximity to the finish point,
-    /// handles animation switching, dodge roll functionality with cooldown, and evasion mechanic.
-    /// Теперь использует единую скорость из PlayerStatsHandler и отображает реальную скорость в инспекторе.
+    /// Controls player movement, light, animation, dodge roll, evasion and traps.
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
@@ -24,7 +21,7 @@ namespace Resources.Scripts.Player
 
         #region Inspector Fields
         [Header("Movement Settings")]
-        [SerializeField, Tooltip("Текущая скорость передвижения (для отладки)")]
+        [SerializeField, Tooltip("Текущая скорость (для отладки)")]
         private float currentSpeed;
         [SerializeField] private PlayerJoystick joystick;
         [SerializeField] private GameObject trapPrefab;
@@ -69,7 +66,6 @@ namespace Resources.Scripts.Player
         private bool isRolling;
         private bool canRoll = true;
         private Sprite originalSprite;
-
         private float rollCooldownRemaining;
         #endregion
 
@@ -123,11 +119,10 @@ namespace Resources.Scripts.Player
             if (dir.magnitude > 0.1f)
                 lastMoveDirection = dir.normalized;
 
-            // Всегда используем единую скорость из PlayerStatsHandler
-            float speed = playerStats.GetTotalMoveSpeed() * currentSlowMultiplier;
-            UpdateCurrentSpeedDisplay(speed);
+            float spd = playerStats.GetTotalMoveSpeed() * currentSlowMultiplier;
+            UpdateCurrentSpeedDisplay(spd);
 
-            transform.Translate(dir * speed * Time.deltaTime, Space.World);
+            transform.Translate(dir * spd * Time.deltaTime, Space.World);
 
             if (dir == Vector2.zero)
                 animator.Play(IdleAnimationName);
@@ -282,7 +277,6 @@ namespace Resources.Scripts.Player
         private IEnumerator SpeedBoostCoroutine(float mult, float duration)
         {
             bonusActive = true;
-            float origSpeed = playerStats.GetTotalMoveSpeed();
             playerStats.ModifyMoveSpeedPercent((mult - 1f) * 100f);
             UpdateCurrentSpeedDisplay();
             yield return new WaitForSeconds(duration);

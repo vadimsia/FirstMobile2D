@@ -6,7 +6,7 @@ namespace Resources.Scripts.Player
     /// <summary>
     /// Хранит и обновляет состояние здоровья, маны и собранных фей.
     /// Также даёт возможность уклоняться и отображать UI-текст уклонения на Canvas.
-    /// Поддерживает процентные бонусы к скорости передвижения и позволяет в инспекторе видеть текущую скорость.
+    /// Поддерживает процентные бонусы к скорости передвижения, радиусу притягивания фей и позволяет в инспекторе видеть текущие значения.
     /// </summary>
     public class PlayerStatsHandler : MonoBehaviour
     {
@@ -46,9 +46,18 @@ namespace Resources.Scripts.Player
         [Header("Movement Settings")]
         [SerializeField, Tooltip("Базовая скорость движения")]
         private float baseMoveSpeed = 5f;
-        [SerializeField, Tooltip("Текущий итоговый скорость (с учётом перков)")]
+        [SerializeField, Tooltip("Текущая итоговая скорость (с учётом перков)")]
         private float currentMoveSpeed;
         private float moveSpeedPercentBonus;  // бонус в процентах
+
+        [Header("Fairy Pull Settings")]
+        [SerializeField, Tooltip("Базовый радиус притягивания фей")]
+        private float basePullRange = 3f;
+        private float pullRangePercentBonus;  // бонус в процентах
+
+        [Header("Debug (Runtime)")]
+        [SerializeField, Tooltip("Текущий радиус притягивания фей с учётом перков")]
+        private float debugPullRange;
 
         [Header("Evasion Settings")]
         [SerializeField, Range(0f, 100f), Tooltip("Текущий шанс уклонения (%)")]
@@ -64,6 +73,7 @@ namespace Resources.Scripts.Player
         private float defaultManaRegenDelay;
         private float defaultBaseMoveSpeed;
         private float defaultEvasionChance;
+        private float defaultBasePullRange;
 
         private void Awake()
         {
@@ -71,6 +81,7 @@ namespace Resources.Scripts.Player
             defaultManaRegenDelay = manaRegenDelayAfterSpell;
             defaultBaseMoveSpeed = baseMoveSpeed;
             defaultEvasionChance = baseEvasionChance;
+            defaultBasePullRange = basePullRange;
             currentMana = maxMana;
             UpdateCurrentMoveSpeed();
         }
@@ -86,6 +97,9 @@ namespace Resources.Scripts.Player
             // Кулдаун уклонения
             if (evasionCooldownTimer > 0f)
                 evasionCooldownTimer -= Time.deltaTime;
+
+            // Обновляем значение для инспектора
+            debugPullRange = PullRange;
         }
 
         private void RegenerateMana()
@@ -119,6 +133,7 @@ namespace Resources.Scripts.Player
             baseMoveSpeed = defaultBaseMoveSpeed;
             moveSpeedPercentBonus = 0f;
             baseEvasionChance = defaultEvasionChance;
+            pullRangePercentBonus = 0f;
             evasionCooldownTimer = 0f;
             currentMana = Mathf.Min(currentMana, maxMana);
             UpdateCurrentMoveSpeed();
@@ -153,16 +168,25 @@ namespace Resources.Scripts.Player
         }
 
         /// <summary>
-        /// Возвращает итоговую скорость с учётом процентных бонусов.
+        /// Добавляет процентный бонус к радиусу притягивания фей.
         /// </summary>
-        public float GetTotalMoveSpeed()
+        public void ModifyPullRangePercent(float percentBonus)
         {
-            return currentMoveSpeed;
+            pullRangePercentBonus += percentBonus;
         }
+
+        /// <summary>
+        /// Возвращает радиус притягивания фей с учётом бонусов.
+        /// </summary>
+        public float PullRange => basePullRange * (1f + pullRangePercentBonus / 100f);
 
         public void ModifyEvasion(float bonus)
         {
             baseEvasionChance += bonus;
+        }
+        public float GetTotalMoveSpeed()
+        {
+            return currentMoveSpeed;
         }
 
         public float CurrentMana => currentMana;

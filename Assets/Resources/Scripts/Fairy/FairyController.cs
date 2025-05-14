@@ -3,49 +3,106 @@ using UnityEngine;
 namespace Resources.Scripts.Fairy
 {
     /// <summary>
-    /// Controls fairy movement within a defined radius and handles sprite orientation.
+    /// Управляет перемещением феи и притягиванием к игроку.
+    /// Во время PullTo обновляет в шейдере параметры _AtrPos и _Progress для эффекта dissolve.
     /// </summary>
     [DisallowMultipleComponent]
     public class FairyController : MonoBehaviour
     {
-        [Header("Movement Settings")]
-        [SerializeField, Range(1, 10), Tooltip("Maximum multiplier for movement radius from origin position.")]
+        [Header("Параметры движения")]
+        [SerializeField, Range(1, 10), Tooltip("Максимальный радиус перемещения от исходной позиции.")]
         private int maxMoveRadius = 2;
 
-        [SerializeField, Range(1, 20), Tooltip("Movement speed affecting interpolation.")]
+        [SerializeField, Range(1, 20), Tooltip("Скорость перемещения феи.")]
         private int speed = 5;
 
-        [SerializeField, Tooltip("Smoothing factor for movement interpolation.")]
+        [SerializeField, Tooltip("Сглаживание интерполяции движения.")]
         private float moveSmoothing = 0.1f;
 
-        [Header("Randomization Settings")]
-        [SerializeField, Tooltip("Minimum multiplier for random offset distance.")]
+        [Header("Параметры рандомизации")]
+        [SerializeField, Tooltip("Минимальный множитель случайного смещения.")]
         private float minOffsetMultiplier = 1f;
 
-        [SerializeField, Tooltip("Maximum multiplier for random offset distance.")]
+        [SerializeField, Tooltip("Максимальный множитель случайного смещения.")]
         private float maxOffsetMultiplier = 3f;
 
-        [Header("Debug Settings")]
-        [SerializeField, Tooltip("Enable debug logging for movement.")]
+        [Header("Отладка")]
+        [SerializeField, Tooltip("Выводить в консоль цели движения.")]
         private bool debugLog;
 
+        // Ссылка на SpriteRenderer и материал (инстанс)
+        private SpriteRenderer spriteRenderer;
+        private Material dissolveMat;
+
+        // Pull-логика
+        private bool isBeingPulled = false;
+        private Vector3 pullTarget;
+        private float pullSpeed;
+        private float initialPullDistance;
+        [Tooltip("Минимальное расстояние для поглощения")]
+        public float absorbDistance = 0.2f;
+
+        // Патруль
         private Vector3 originPosition;
         private Vector3 targetPosition;
-        private SpriteRenderer spriteRenderer;
+
+        // Кэш ID-шников для шейдера
+        private static readonly int ProgressID = Shader.PropertyToID("_Progress");
+        private static readonly int AtrPosID   = Shader.PropertyToID("_AtrPos");
 
         private void Awake()
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer == null)
             {
-                Debug.LogWarning("Missing SpriteRenderer component on Fairy.", this);
+                Debug.LogWarning("SpriteRenderer не найден.", this);
+                return;
             }
+
+            // Создаем и сразу инициализируем инстанс материала
+            dissolveMat = Instantiate(spriteRenderer.sharedMaterial);
+            spriteRenderer.material = dissolveMat;
+            // Дефолтное состояние: без dissolve, центр шейдера по середине спрайта
+            dissolveMat.SetFloat(ProgressID, 0f);
+            dissolveMat.SetVector(AtrPosID, new Vector4(0.5f, 0.5f, 0f, 0f));
+
+            originPosition = transform.position;
+            targetPosition = originPosition;
+        }
+
+        private void Update()
+        {
+            if (isBeingPulled)
+            {
+                // Рассчитываем прогресс эффекта dissolve
+                float currentDist = Vector3.Distance(transform.position, pullTarget);
+                float t = 1f - Mathf.Clamp01((currentDist - absorbDistance) / (initialPullDistance - absorbDistance));
+                dissolveMat.SetFloat(ProgressID, t);
+
+                // Фиксируем ArtPos в центр (0.5, 0.5)
+                dissolveMat.SetVector(AtrPosID, new Vector4(0.5f, 0.5f, 0f, 0f));
+
+                // Физика притягивания
+                Vector3 dir = (pullTarget - transform.position).normalized;
+                transform.position += dir * pullSpeed * Time.deltaTime;
+                if (dir.x != 0f) spriteRenderer.flipX = dir.x > 0f;
+                return;
+            }
+
+            // Стандартный патруль
+            if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
+                UpdateTargetPosition();
+
+            float interp = moveSmoothing * speed * Time.deltaTime;
+            Vector3 newPos = Vector3.Lerp(transform.position, targetPosition, interp);
+            Vector3 moveDir = newPos - transform.position;
+            transform.position = newPos;
+            if (moveDir.x != 0f) spriteRenderer.flipX = moveDir.x > 0f;
         }
 
         /// <summary>
-        /// Initializes the fairy's starting position.
+        /// Инициализация исходной позиции при создании.
         /// </summary>
-        /// <param name="initialPosition">The starting world position for movement origin.</param>
         public void Init(Vector3 initialPosition)
         {
             originPosition = initialPosition;
@@ -53,46 +110,33 @@ namespace Resources.Scripts.Fairy
         }
 
         /// <summary>
-        /// Calculates a new random target within the defined radius.
+        /// Запускает притягивание к точке target со скоростью speed.
         /// </summary>
-        private void UpdateTargetPosition()
+        public void PullTo(Vector3 target, float speed)
         {
-            // Get a random direction.
-            Vector2 randomDirection = Random.insideUnitCircle.normalized;
-            // Compute total distance multiplier.
-            float distanceFactor = Random.Range(minOffsetMultiplier, maxOffsetMultiplier) * maxMoveRadius;
-            Vector3 randomOffset = new Vector3(randomDirection.x, randomDirection.y, 0f) * distanceFactor;
-            targetPosition = originPosition + randomOffset;
-
-            if (debugLog)
+            if (!isBeingPulled)
             {
-                Debug.Log($"New target position: {targetPosition}", this);
-            }
-        }
-
-        private void Update()
-        {
-            // If close to target, choose a new one.
-            if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
-            {
-                UpdateTargetPosition();
-            }
-
-            // Smoothly interpolate towards the target.
-            float t = moveSmoothing * speed * Time.deltaTime;
-            Vector3 newPosition = Vector3.Lerp(transform.position, targetPosition, t);
-            Vector3 moveDir = newPosition - transform.position;
-            transform.position = newPosition;
-
-            // Flip sprite based on horizontal movement direction.
-            if (spriteRenderer != null && moveDir.x != 0f)
-            {
-                spriteRenderer.flipX = moveDir.x > 0f;
+                pullTarget = target;
+                pullSpeed = speed;
+                initialPullDistance = Vector3.Distance(transform.position, pullTarget);
+                isBeingPulled = true;
             }
         }
 
         /// <summary>
-        /// Removes the fairy from the scene.
+        /// Выбирает новую случайную цель для патруля.
+        /// </summary>
+        private void UpdateTargetPosition()
+        {
+            Vector2 rndDir = Random.insideUnitCircle.normalized;
+            float distFactor = Random.Range(minOffsetMultiplier, maxOffsetMultiplier) * maxMoveRadius;
+            Vector3 rndOffset = new Vector3(rndDir.x, rndDir.y, 0f) * distFactor;
+            targetPosition = originPosition + rndOffset;
+            if (debugLog) Debug.Log($"Новая цель: {targetPosition}", this);
+        }
+
+        /// <summary>
+        /// Уничтожает фею при поглощении.
         /// </summary>
         public void DestroyFairy()
         {

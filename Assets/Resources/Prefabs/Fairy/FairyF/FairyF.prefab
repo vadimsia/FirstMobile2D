@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4992319543349009509}
   - component: {fileID: 8201399005110109946}
   - component: {fileID: 4565138074813279902}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: FairyF
   m_TagString: Fairy
   m_Icon: {fileID: 0}
@@ -58,7 +58,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: b78cb20edccab7b4a869594c1d07f41d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -108,6 +108,7 @@ MonoBehaviour:
   minOffsetMultiplier: 1
   maxOffsetMultiplier: 3
   debugLog: 0
+  absorbDistance: 0.1
 --- !u!58 &8201399005110109946
 CircleCollider2D:
   m_ObjectHideFlags: 0

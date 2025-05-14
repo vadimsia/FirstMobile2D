@@ -5,10 +5,11 @@ namespace Resources.Scripts.Data
 {
     public enum PerkType
     {
-        ManaRegenDelayReduction,
-        MaxManaIncrease,
-        MoveSpeedIncrease,
-        EvasionChanceIncrease
+        ManaRegenDelayReduction,    // уменьшения времени на восстановление маны
+        MaxManaIncrease,            // увеличение маны
+        MoveSpeedIncrease,          // скорость передвижения
+        EvasionChanceIncrease,      // шанс уклонения
+        FairyPullRangeIncrease      // притягивание фей
     }
 
     public enum PerkQuality { Small, Medium, Large }
@@ -18,7 +19,7 @@ namespace Resources.Scripts.Data
     {
         public PerkType Type;
         public PerkQuality Quality;
-        public float Value;  // теперь интерпретируется как проценты для MoveSpeed
+        public float Value;  // проценты для MoveSpeed и FairyPullRange
 
         public string GetDescription()
         {
@@ -32,6 +33,8 @@ namespace Resources.Scripts.Data
                     $"+{Value:F1}% к скорости передвижения ({Quality})",
                 PerkType.EvasionChanceIncrease =>
                     $"+{Value:F1}% к шансу уклонения ({Quality})",
+                PerkType.FairyPullRangeIncrease =>
+                    $"+{Value:F1}% к радиусу притягивания фей от базового ({Quality})",
                 _ => ""
             };
         }
@@ -51,6 +54,10 @@ namespace Resources.Scripts.Data
                     break;
                 case PerkType.EvasionChanceIncrease:
                     stats.ModifyEvasion(Value);
+                    break;
+                case PerkType.FairyPullRangeIncrease:
+                    // здесь мы увеличиваем радиус притягивания на Value процентов
+                    stats.ModifyPullRangePercent(Value);
                     break;
             }
         }

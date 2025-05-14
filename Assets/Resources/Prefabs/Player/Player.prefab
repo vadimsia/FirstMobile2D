@@ -1114,6 +1114,7 @@ GameObject:
   - component: {fileID: 2103961747317735164}
   - component: {fileID: 1957564526145093592}
   - component: {fileID: 1901290873122885768}
+  - component: {fileID: 7490868119604115255}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1214,6 +1215,9 @@ MonoBehaviour:
   manaRegenRate: 1
   manaRegenDelayAfterSpell: 2
   baseMoveSpeed: 2
+  currentMoveSpeed: 0
+  basePullRange: 1
+  debugPullRange: 1
   baseEvasionChance: 33
   evasionCooldown: 1
   evasionTextPrefab: {fileID: 1084327597910860270, guid: 13992fd43d387124c95fb9843b30cfae, type: 3}
@@ -1229,8 +1233,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a43795d082424d3f97d7fc559e4a940, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  keyboardSpeed: 2
-  joystickSpeed: 2
+  currentSpeed: 0
   joystick: {fileID: 8125011222821322946, guid: b9ce74a2d514fc842ab3de1eb5fc6c15, type: 3}
   trapPrefab: {fileID: 726999753017517549, guid: 2883cba0652d4754ab1bd2e5e075b41d, type: 3}
   playerLight: {fileID: 0}
@@ -1239,8 +1242,8 @@ MonoBehaviour:
   maxLightRange: 2
   isImmortal: 1
   animator: {fileID: 2103961747317735164}
-  spriteRenderer: {fileID: 0}
-  rollSprite: {fileID: 0}
+  spriteRenderer: {fileID: 2992285719649780434}
+  rollSprite: {fileID: 21300000, guid: e6c083e109074e040b89e6b627246fbf, type: 3}
   maxDarkSkullHits: 2
   rollSpeed: 6
   rollDuration: 0.3
@@ -1375,6 +1378,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44b13eb25f1aef9468bafa2306b151ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &7490868119604115255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7684459473974908381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ce0bf5e52e306944a78e624cdbb1817, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pullSpeed: 7
+  absorbRadius: 0.2
 --- !u!1 &7686015707831549786
 GameObject:
   m_ObjectHideFlags: 0
