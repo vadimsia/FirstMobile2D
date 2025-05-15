@@ -22,7 +22,7 @@ namespace Resources.Scripts.UI
 
         private void Update()
         {
-            transform.position += Vector3.up * floatSpeed * Time.deltaTime;
+            transform.position += Vector3.up * floatSpeed * Time.deltaTime; // мне так удобно, отстань Rider :(
 
             if (tmpText == null) return;
 

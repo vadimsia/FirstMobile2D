@@ -6,23 +6,27 @@ using Resources.Scripts.Fairy;
 using Resources.Scripts.Misc;
 using UnityEngine.Rendering.Universal;
 using Resources.Scripts.Labyrinth;
+using Spine.Unity;
 
 namespace Resources.Scripts.Player
 {
     /// <summary>
     /// Controls player movement, light, animation, dodge roll, evasion and traps.
+    /// Uses Spine animation instead of Unity Animator / SpriteRenderer.
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
         #region Constants
-        private const string IdleAnimationName = "Idle";
-        private const string RunAnimationName = "Run";
+        private const string IdleAnimationName = "Goes_01_001";
+        private const string RunAnimationName  = "Run_02_001";
+        private const string JumpAnimationName = "Jump_03_004";
         #endregion
 
         #region Inspector Fields
+
         [Header("Movement Settings")]
         [SerializeField, Tooltip("Текущая скорость (для отладки)")]
-        private float currentSpeed;
+        private float currentSpeed;                                     // понадобится
         [SerializeField] private PlayerJoystick joystick;
         [SerializeField] private GameObject trapPrefab;
 
@@ -36,7 +40,9 @@ namespace Resources.Scripts.Player
         public bool isImmortal;
 
         [Header("Animation Settings")]
-        [SerializeField] private Animator animator;
+        [Tooltip("Ссылка на Spine SkeletonAnimation (дочерний объект)")]
+        [SerializeField] private SkeletonAnimation skeletonAnimation;
+        [Tooltip("SpriteRenderer используется только для кувырка")]
         [SerializeField] private SpriteRenderer spriteRenderer;
         [SerializeField] private Sprite rollSprite;
 
@@ -47,14 +53,18 @@ namespace Resources.Scripts.Player
         [SerializeField, Tooltip("Скорость кувырка")] private float rollSpeed = 6f;
         [SerializeField, Tooltip("Длительность кувырка (сек)")] private float rollDuration = 0.3f;
         [SerializeField, Tooltip("Кулдаун между кувырками (сек)")] private float rollCooldown = 2f;
+
         #endregion
 
         #region Public Events & Properties
+
         public event Action<float> OnRollCooldownChanged;
         public float RollCooldownDuration => rollCooldown;
+
         #endregion
 
         #region Private Fields
+
         private PlayerStatsHandler playerStats;
         private float currentSlowMultiplier = 1f;
         private Coroutine slowCoroutine;
@@ -65,15 +75,23 @@ namespace Resources.Scripts.Player
         private Vector2 lastMoveDirection = Vector2.left;
         private bool isRolling;
         private bool canRoll = true;
-        private Sprite originalSprite;
         private float rollCooldownRemaining;
+
         #endregion
 
         #region Unity Methods
+
         private void Start()
         {
             playerStats = GetComponent<PlayerStatsHandler>();
-            if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+
+            if (skeletonAnimation == null)
+                skeletonAnimation = GetComponentInChildren<SkeletonAnimation>();
+
+            if (spriteRenderer == null)
+                spriteRenderer = GetComponent<SpriteRenderer>();
+
+            PlayAnimation(IdleAnimationName, true);
             UpdateCurrentSpeedDisplay();
 
             if (finishPoint != null)
@@ -92,6 +110,9 @@ namespace Resources.Scripts.Player
 
             if (Input.GetKeyDown(KeyCode.LeftShift))
                 TryRoll();
+
+            if (!isRolling && Input.GetKeyDown(KeyCode.Space))
+                PlayAnimation(JumpAnimationName, false);
         }
 
         private void OnTriggerEnter2D(Collider2D other)
@@ -103,9 +124,11 @@ namespace Resources.Scripts.Player
                 playerStats.RestoreMana(20f);
             }
         }
+
         #endregion
 
         #region Movement Methods
+
         private void UpdateMovement()
         {
             if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
@@ -114,32 +137,38 @@ namespace Resources.Scripts.Player
 
             float h = joystick != null ? joystick.Horizontal : Input.GetAxis("Horizontal");
             float v = joystick != null ? joystick.Vertical : Input.GetAxis("Vertical");
-
             Vector2 dir = new Vector2(h, v);
+
             if (dir.magnitude > 0.1f)
+            {
                 lastMoveDirection = dir.normalized;
+                PlayAnimation(RunAnimationName, true);
+
+                // *** Инвертированная логика ***
+                // Если двигаемся вправо, исходная модель всё ещё «смотрит» влево,
+                // поэтому ставим ScaleX = -1, чтобы она повёрнулась вправо.
+                // Если двигаемся влево — ScaleX = +1.
+                skeletonAnimation.Skeleton.ScaleX = lastMoveDirection.x > 0f ? -1f : 1f;
+            }
+            else
+            {
+                PlayAnimation(IdleAnimationName, true);
+            }
 
             float spd = playerStats.GetTotalMoveSpeed() * currentSlowMultiplier;
             UpdateCurrentSpeedDisplay(spd);
-
-            transform.Translate(dir * spd * Time.deltaTime, Space.World);
-
-            if (dir == Vector2.zero)
-                animator.Play(IdleAnimationName);
-            else
-            {
-                animator.Play(RunAnimationName);
-                spriteRenderer.flipX = h > 0f;
-            }
+            transform.Translate(dir * spd * Time.deltaTime, Space.World); // :(
         }
 
         private void UpdateCurrentSpeedDisplay(float speed = -1f)
         {
             currentSpeed = speed < 0f ? playerStats.GetTotalMoveSpeed() : speed;
         }
+
         #endregion
 
         #region Dodge Roll
+
         public void TryRoll()
         {
             if (!canRoll || isRolling) return;
@@ -153,28 +182,28 @@ namespace Resources.Scripts.Player
             rollCooldownRemaining = rollCooldown;
             OnRollCooldownChanged?.Invoke(1f);
 
-            animator.enabled = false;
-            originalSprite = spriteRenderer.sprite;
+            skeletonAnimation.enabled = false;
+            spriteRenderer.enabled = true;
             spriteRenderer.sprite = rollSprite;
 
             Vector2 dir = lastMoveDirection.normalized;
             float rotSign = dir.x >= 0 ? -1f : 1f;
             float rotSpeed = 360f / rollDuration * rotSign;
-
             float t = 0f;
             while (t < rollDuration)
             {
-                transform.Translate(dir * rollSpeed * Time.deltaTime, Space.World);
+                transform.Translate(dir * rollSpeed * Time.deltaTime, Space.World); // :(
                 transform.Rotate(0f, 0f, rotSpeed * Time.deltaTime);
                 t += Time.deltaTime;
                 yield return null;
             }
 
-            spriteRenderer.sprite = originalSprite;
             transform.rotation = Quaternion.identity;
-            animator.enabled = true;
-            isRolling = false;
+            spriteRenderer.enabled = false;
+            skeletonAnimation.enabled = true;
+            PlayAnimation(IdleAnimationName, true);
 
+            isRolling = false;
             yield return new WaitForSeconds(rollCooldownRemaining);
             canRoll = true;
         }
@@ -186,9 +215,11 @@ namespace Resources.Scripts.Player
             if (rollCooldownRemaining < 0f) rollCooldownRemaining = 0f;
             OnRollCooldownChanged?.Invoke(rollCooldownRemaining / rollCooldown);
         }
+
         #endregion
 
         #region Light Methods
+
         private void UpdateLightOuterRange()
         {
             if (finishPoint == null || playerLight == null || initialDistance <= 0f) return;
@@ -210,25 +241,26 @@ namespace Resources.Scripts.Player
                 yield return null;
             }
         }
+
         #endregion
 
         #region Damage and Evasion
+
         public void TakeDamage(EnemyController enemy)
         {
             if (isImmortal || isRolling) return;
-
-            if (playerStats.TryEvade(transform.position))
-                return;
+            if (playerStats.TryEvade(transform.position)) return;
 
             playerStats.Health -= enemy.GetComponent<EnemyStatsHandler>().Damage;
             if (playerStats.Health <= 0) { Die(); return; }
-
             if (enemy.pushPlayer)
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
         }
+
         #endregion
 
         #region Other Effects
+
         public void ApplySlow(float factor, float duration)
         {
             if (slowCoroutine != null) StopCoroutine(slowCoroutine);
@@ -304,6 +336,18 @@ namespace Resources.Scripts.Player
                 canvas.gameObject.SetActive(false);
             Destroy(gameObject);
         }
+
+        #endregion
+
+        #region Spine Helper
+
+        private void PlayAnimation(string animName, bool loop)
+        {
+            var current = skeletonAnimation.state.GetCurrent(0);
+            if (current != null && current.Animation.Name == animName) return;
+            skeletonAnimation.state.SetAnimation(0, animName, loop);
+        }
+
         #endregion
     }
 }
