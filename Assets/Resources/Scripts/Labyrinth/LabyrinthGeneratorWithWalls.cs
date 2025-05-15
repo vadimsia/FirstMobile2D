@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using TMPro;
 using Resources.Scripts.Data;
-using Resources.Scripts.Misc;
 using Resources.Scripts.GameManagers;
 
 namespace Resources.Scripts.Labyrinth
@@ -50,6 +49,20 @@ namespace Resources.Scripts.Labyrinth
         [SerializeField, Range(1, 10)] private int minPlacementDistance = 5;
         [SerializeField] private int bonusCount = 1;
         [SerializeField] private int trapCount = 3;
+
+        [Header("Настройки спавна врагов")]
+        [SerializeField, Tooltip("Список префабов врагов")]
+        private List<GameObject> enemyPrefabs = new List<GameObject>();
+        [SerializeField, Range(0, 50), Tooltip("Количество врагов для спавна")]
+        private int enemyCount = 5;
+        [SerializeField, Tooltip("Минимальное расстояние между спавном врагов (в клетках)")]
+        private float minEnemySpawnDistance = 3f;
+
+        [Header("Маркеры старта/финиша")]
+        [SerializeField, Tooltip("Префаб маркера старта")]
+        private GameObject startMarkerPrefab;
+        [SerializeField, Tooltip("Префаб маркера финиша")]
+        private GameObject finishMarkerPrefab;
 
         [Header("UI Таймер")]
         [SerializeField] private TextMeshProUGUI timerText;
@@ -99,7 +112,7 @@ namespace Resources.Scripts.Labyrinth
 
         private void Start()
         {
-            // Загружаем параметры из SO или из StageData
+            // Загрузка параметров
             if (labyrinthSettings != null)
             {
                 rows           = labyrinthSettings.rows;
@@ -132,24 +145,16 @@ namespace Resources.Scripts.Labyrinth
                 clockHand.localRotation = Quaternion.Euler(0f, 0f, -90f);
 
             labyrinth = new LabyrinthField(rows, cols, cellSizeX, cellSizeY);
+
             GenerateWalls();
-
-            // Ставим игрока в старт
-            var player = GameObject.FindWithTag(ETag.Player.ToString());
-            if (player != null)
-                player.transform.position = labyrinth.GetStartWorldPosition();
-
-            // Миникарта
-            if (LabyrinthMapController.Instance != null)
-                LabyrinthMapController.Instance.SetSolutionPath(
-                    labyrinth.GetSolutionPathWorldPositions()
-                );
+            PlaceGameplayElements();
         }
 
         private void GenerateWalls()
         {
             var bonusPositions = new List<Vector3>();
             var trapPositions  = new List<Vector3>();
+            var enemyPositions = new List<Vector3>();
 
             for (int r = 0; r < rows; r++)
             for (int c = 0; c < cols; c++)
@@ -157,30 +162,32 @@ namespace Resources.Scripts.Labyrinth
                 Vector3 center = new Vector3(c * cellSizeX, -r * cellSizeY, 0f);
                 var cell = labyrinth.Field[r, c];
 
+                if (!cell.IsStart && !cell.IsFinish)
+                    enemyPositions.Add(center);
+
                 if (cell.TopBorder && topWallPrefab != null)
                     CreateWall(topWallPrefab, WallOrientation.Top, r, c,
                                center, Vector3.up * (cellSizeY / 2 + topWallSpacingY));
-
                 if (cell.BottomBorder && bottomWallPrefab != null)
                     CreateWall(bottomWallPrefab, WallOrientation.Bottom, r, c,
                                center, Vector3.down * (cellSizeY / 2 + bottomWallSpacingY));
 
                 if (cell.LeftBorder)
                 {
-                    bool isNoIso = cell.BottomBorder
-                                 || (c > 0  && labyrinth.Field[r, c - 1].BottomBorder)
-                                 || (r < rows - 1 && labyrinth.Field[r + 1, c].LeftBorder);
-                    CreateWall(isNoIso ? leftNoIsoWallPrefab : leftWallPrefab,
+                    bool noIso = cell.BottomBorder
+                               || (c > 0 && labyrinth.Field[r, c - 1].BottomBorder)
+                               || (r < rows - 1 && labyrinth.Field[r + 1, c].LeftBorder);
+                    CreateWall(noIso ? leftNoIsoWallPrefab : leftWallPrefab,
                                WallOrientation.Left, r, c,
                                center, Vector3.left * (cellSizeX / 2 + leftWallSpacingX));
                 }
 
                 if (cell.RightBorder)
                 {
-                    bool isNoIso = cell.BottomBorder
-                                 || (c < cols - 1 && labyrinth.Field[r, c + 1].BottomBorder)
-                                 || (r < rows - 1 && labyrinth.Field[r + 1, c].RightBorder);
-                    CreateWall(isNoIso ? rightNoIsoWallPrefab : rightWallPrefab,
+                    bool noIso = cell.BottomBorder
+                               || (c < cols - 1 && labyrinth.Field[r, c + 1].BottomBorder)
+                               || (r < rows - 1 && labyrinth.Field[r + 1, c].RightBorder);
+                    CreateWall(noIso ? rightNoIsoWallPrefab : rightWallPrefab,
                                WallOrientation.Right, r, c,
                                center, Vector3.right * (cellSizeX / 2 + rightWallSpacingX));
                 }
@@ -194,6 +201,42 @@ namespace Resources.Scripts.Labyrinth
 
             PlaceItems(bonusPrefab, bonusCount, bonusPositions);
             PlaceItems(trapPrefab,  trapCount,  trapPositions);
+            PlaceEnemies(enemyPrefabs, enemyCount, enemyPositions, minEnemySpawnDistance);
+        }
+
+        private void PlaceGameplayElements()
+        {
+            // 1. Вычисляем старт/финиш
+            Vector3 startPos  = labyrinth.GetStartWorldPosition();
+            Vector3 finishPos = labyrinth.GetFinishWorldPosition();
+
+            // 2. Ставим игрока в старт
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+                player.transform.position = startPos;
+
+            // 3. Маркеры
+            if (startMarkerPrefab != null)
+            {
+                var go = Instantiate(startMarkerPrefab, startPos, Quaternion.identity, transform);
+                go.tag = "Start";
+            }
+
+            if (finishMarkerPrefab != null)
+            {
+                var go = Instantiate(finishMarkerPrefab, finishPos, Quaternion.identity, transform);
+                go.tag = "Finish";
+                var col = go.AddComponent<BoxCollider2D>();
+                col.isTrigger = true;
+                col.size = new Vector2(cellSizeX, cellSizeY);
+                go.AddComponent<LabyrinthFinishTrigger>();
+            }
+
+            // 4. Мини‑карта
+            if (LabyrinthMapController.Instance != null)
+                LabyrinthMapController.Instance.SetSolutionPath(
+                    labyrinth.GetSolutionPathWorldPositions()
+                );
         }
 
         private GameObject CreateWall(
@@ -209,7 +252,6 @@ namespace Resources.Scripts.Labyrinth
             go.name = $"{ori}Wall_R{r}_C{c}";
             SetLayerRecursively(go, labyrinthUnityLayer);
 
-            // SortingOrder
             switch (ori)
             {
                 case WallOrientation.Top:
@@ -242,7 +284,7 @@ namespace Resources.Scripts.Labyrinth
                         {
                             var up   = go.transform.Find("Up");
                             var down = go.transform.Find("Down");
-                            if (up   != null) up  .GetComponent<SpriteRenderer>().sortingOrder = sortingOrderRightNoIsoUp;
+                            if (up   != null) up.GetComponent<SpriteRenderer>().sortingOrder = sortingOrderRightNoIsoUp;
                             if (down != null) down.GetComponent<SpriteRenderer>().sortingOrder = sortingOrderRightNoIsoDown;
                         }
                         else
@@ -263,7 +305,7 @@ namespace Resources.Scripts.Labyrinth
             {
                 foreach (Transform child in go.transform)
                 {
-                    GameObject part = child.gameObject;
+                    var part = child.gameObject;
                     if (enableWallColliders) AddCollider(part, ori);
 
                     var sc = part.GetComponent<ShadowCaster2D>() ?? part.AddComponent<ShadowCaster2D>();
@@ -364,6 +406,26 @@ namespace Resources.Scripts.Labyrinth
                 available.RemoveAll(p =>
                     Mathf.Abs(p.x - chosen.x) / cellSizeX +
                     Mathf.Abs(p.y - chosen.y) / cellSizeY < minPlacementDistance
+                );
+            }
+        }
+
+        private void PlaceEnemies(List<GameObject> prefabs, int count, List<Vector3> positions, float minDistance)
+        {
+            if (prefabs == null || prefabs.Count == 0 || positions.Count == 0 || count <= 0)
+                return;
+
+            int placed = 0;
+            var available = new List<Vector3>(positions);
+            while (placed < count && available.Count > 0)
+            {
+                int idx = UnityEngine.Random.Range(0, available.Count);
+                Vector3 pos = available[idx];
+                var prefab = prefabs[UnityEngine.Random.Range(0, prefabs.Count)];
+                Instantiate(prefab, pos, Quaternion.identity, transform);
+                placed++;
+                available.RemoveAll(p =>
+                    Vector3.Distance(p, pos) < minDistance * Mathf.Max(cellSizeX, cellSizeY)
                 );
             }
         }
