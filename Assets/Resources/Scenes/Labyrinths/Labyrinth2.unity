@@ -217,6 +217,13 @@ MonoBehaviour:
   minPlacementDistance: 5
   bonusCount: 1
   trapCount: 3
+  enemyPrefabs:
+  - {fileID: 7260566827850767976, guid: b89c68620d9c2c441b0d4ecce42ea97d, type: 3}
+  - {fileID: 5454972267272251233, guid: 96e315385965b1142af797f7f8e15b6d, type: 3}
+  enemyCount: 3
+  minEnemySpawnDistance: 3
+  startMarkerPrefab: {fileID: 8875842617864285075, guid: 192496776f58d5f489d2377fea84bdbb, type: 3}
+  finishMarkerPrefab: {fileID: 5256536322695205851, guid: a473cfb0ff6ee4846923c47ac33baa61, type: 3}
   timerText: {fileID: 0}
   clockHand: {fileID: 2913262263197063434}
   shadowWidthOffset: 0.1
@@ -242,6 +249,10 @@ PrefabInstance:
     - target: {fileID: 2992285719649780434, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_SortingOrder
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5485085163093197689, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_Mesh
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7684459473974908381, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_Name

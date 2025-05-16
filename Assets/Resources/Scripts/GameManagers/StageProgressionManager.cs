@@ -35,6 +35,9 @@ namespace Resources.Scripts.GameManagers
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
+        /// <summary>
+        /// Запускает текущий Stage: начинает с его первой арены.
+        /// </summary>
         public void StartStage()
         {
             currentArenaIndex = 0;
@@ -97,9 +100,28 @@ namespace Resources.Scripts.GameManagers
                 LoadLabyrinth();
         }
 
+        /// <summary>
+        /// Вызывается после прохождения лабиринта.
+        /// Пытаемся перейти к следующему StageData и запустить его.
+        /// </summary>
+        public void OnLabyrinthCompleted()
+        {
+            // Сначала попытаемся переключиться на следующий StageData
+            bool hasNext = GameStageManager.Instance.LoadNextStage();
+            if (hasNext)
+            {
+                // Запустить новую серию арен этого этапа
+                StartStage();
+            }
+            else
+            {
+                // Все этапы пройдены — можно, например, показать экран победы
+                Debug.Log("Поздравляем! Все этапы пройдены.");
+            }
+        }
+
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            // сброс перков, когда загружается НЕ арена и НЕ лабиринт
             var data = GameStageManager.currentStageData;
             if (data != null)
             {
@@ -112,7 +134,6 @@ namespace Resources.Scripts.GameManagers
                 }
             }
 
-            // ждать кадр, чтобы успеть применить перки на арене/в лабиринте
             StartCoroutine(DelayedApplyAllPerks());
         }
 
@@ -127,7 +148,7 @@ namespace Resources.Scripts.GameManagers
             var stats = Object.FindFirstObjectByType<PlayerStatsHandler>();
             if (stats == null) return;
 
-            stats.ResetStats();       // сброс перед повторным применением
+            stats.ResetStats();
             foreach (var p in selectedPerks)
                 p.Apply(stats);
         }

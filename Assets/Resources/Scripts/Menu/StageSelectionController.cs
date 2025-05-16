@@ -1,10 +1,10 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Resources.Scripts.Data;
 using Resources.Scripts.GameManagers;
 using Resources.Scripts.UI;
-using System.Collections;
 
 namespace Resources.Scripts.Menu
 {
@@ -51,8 +51,7 @@ namespace Resources.Scripts.Menu
             stageImage.sprite    = stage.stageImage;
             leftButton.interactable  = currentStageIndex > 0;
             rightButton.interactable = currentStageIndex < stages.Length - 1;
-            if (panelBackground != null &&
-                currentStageIndex < backgroundSprites.Length)
+            if (panelBackground != null && currentStageIndex < backgroundSprites.Length)
                 panelBackground.sprite = backgroundSprites[currentStageIndex];
         }
 
@@ -76,31 +75,34 @@ namespace Resources.Scripts.Menu
 
         private void OnPlayButton()
         {
-            // Показываем панель загрузки с анимацией
+            // Показываем панель загрузки
             loadingPanelController?.Show();
 
-            // Сохраняем выбранный этап
-            GameStageManager.currentStageData = stages[currentStageIndex];
-            
+            // Устанавливаем выбранный StageData в GameStageManager
+            if (GameStageManager.Instance != null)
+            {
+                GameStageManager.Instance.InitializeStage(currentStageIndex);
+            }
+            else
+            {
+                Debug.LogError("StageSelectionController: GameStageManager.Instance == null");
+            }
+
+            // Убеждаемся, что есть StageProgressionManager
             if (StageProgressionManager.Instance == null)
             {
                 var go = new GameObject("StageProgressionManager");
                 go.AddComponent<StageProgressionManager>();
             }
 
-            // Запускаем с задержкой, чтобы панель оставалась видимой 2 секунды
+            // Ждём пару секунд, чтобы анимация загрузки успела показаться
             StartCoroutine(StartStageWithDelay());
         }
 
         private IEnumerator StartStageWithDelay()
         {
-            // Ждём один кадр, чтобы Show() успел отработать
-            yield return null;
-
-            // Дополнительная задержка 2 секунды
+            yield return null; // хотя бы один кадр
             yield return new WaitForSecondsRealtime(2f);
-
-            // Запуск этапов
             StageProgressionManager.Instance.StartStage();
         }
 

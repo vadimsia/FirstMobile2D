@@ -128,7 +128,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5609987}
-  - component: {fileID: 5609988}
   - component: {fileID: 5609989}
   m_Layer: 3
   m_Name: Labyrinth
@@ -152,31 +151,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 836031894}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5609988
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5609986}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87d0c176fd17543aca71afe4058c0466, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  defaultRows: 5
-  defaultCols: 5
-  defaultCellSizeX: 1
-  defaultCellSizeY: 1
-  defaultTimeLimit: 30
-  cellPrefab: {fileID: 245492848745350129, guid: 8c70a7e90a3315d459e028a87aa2f6b2, type: 3}
-  bonusPrefab: {fileID: 4851787157202972978, guid: 8a0a50a60819e014388d53fd15014872, type: 3}
-  trapPrefab: {fileID: 4432862800593702859, guid: aa8d140e969d673499c9788afe79c39a, type: 3}
-  minPlacementDistance: 5
-  bonusCount: 5
-  trapCount: 20
-  timerText: {fileID: 0}
-  clockHand: {fileID: 2913262263104025372}
 --- !u!114 &5609989
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,6 +191,13 @@ MonoBehaviour:
   minPlacementDistance: 5
   bonusCount: 1
   trapCount: 3
+  enemyPrefabs:
+  - {fileID: 7260566827850767976, guid: b89c68620d9c2c441b0d4ecce42ea97d, type: 3}
+  - {fileID: 5454972267272251233, guid: 96e315385965b1142af797f7f8e15b6d, type: 3}
+  enemyCount: 3
+  minEnemySpawnDistance: 3
+  startMarkerPrefab: {fileID: 8875842617864285075, guid: 192496776f58d5f489d2377fea84bdbb, type: 3}
+  finishMarkerPrefab: {fileID: 5256536322695205851, guid: a473cfb0ff6ee4846923c47ac33baa61, type: 3}
   timerText: {fileID: 0}
   clockHand: {fileID: 2913262263104025372}
   shadowWidthOffset: 0.1
@@ -27644,6 +27625,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: aee47b369f3d2ec45a0ba9533405b5a8, type: 2}
+    - target: {fileID: 5485085163093197689, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 7161899701119650399, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_Size.x
       value: 1.8
