@@ -2,10 +2,10 @@ using UnityEngine;
 using System;
 using System.Collections;
 using Resources.Scripts.Enemy;
-using Resources.Scripts.Fairy;
 using Resources.Scripts.Misc;
 using UnityEngine.Rendering.Universal;
 using Resources.Scripts.Labyrinth;
+using Spine;
 using Spine.Unity;
 
 namespace Resources.Scripts.Player
@@ -17,16 +17,21 @@ namespace Resources.Scripts.Player
     public class PlayerController : MonoBehaviour
     {
         #region Constants
-        private const string IdleAnimationName = "Goes_01_001";
-        private const string RunAnimationName  = "Run_02_001";
-        private const string JumpAnimationName = "Jump_03_004";
+        private const string SlowAnimationName   = "Goes_01_001";
+        private const string RunAnimationName    = "Run_02_001";
+        private const string JumpAnimationName   = "Jamp_03_004";
+        private static readonly string[] IdleAnimations = {
+            "Idle_01_001", "Idle_01_002", "Idle_02_001", "Idle_02_002"
+        };
+        private const float SlowThreshold        = 0.5f;
+        private const float IdleThreshold        = 0.1f;
         #endregion
 
         #region Inspector Fields
 
         [Header("Movement Settings")]
         [SerializeField, Tooltip("Текущая скорость (для отладки)")]
-        private float currentSpeed;                                     // понадобится
+        private float currentSpeed;
         [SerializeField] private PlayerJoystick joystick;
         [SerializeField] private GameObject trapPrefab;
 
@@ -34,7 +39,7 @@ namespace Resources.Scripts.Player
         [SerializeField] private Light2D playerLight;
         [SerializeField] private Transform finishPoint;
         [SerializeField, Range(0.1f, 5f)] private float baseLightRange = 1f;
-        [SerializeField, Range(1f, 2f)] private float maxLightRange = 2f;
+        [SerializeField, Range(1f, 2f)] private float maxLightRange  = 2f;
 
         [Header("Player Settings")]
         public bool isImmortal;
@@ -42,17 +47,16 @@ namespace Resources.Scripts.Player
         [Header("Animation Settings")]
         [Tooltip("Ссылка на Spine SkeletonAnimation (дочерний объект)")]
         [SerializeField] private SkeletonAnimation skeletonAnimation;
-        [Tooltip("SpriteRenderer используется только для кувырка")]
-        [SerializeField] private SpriteRenderer spriteRenderer;
-        [SerializeField] private Sprite rollSprite;
 
         [Header("DarkSkull / Troll Damage Settings")]
         [SerializeField] private int maxDarkSkullHits = 2;
 
         [Header("Dodge Roll Settings")]
-        [SerializeField, Tooltip("Скорость кувырка")] private float rollSpeed = 6f;
-        [SerializeField, Tooltip("Длительность кувырка (сек)")] private float rollDuration = 0.3f;
-        [SerializeField, Tooltip("Кулдаун между кувырками (сек)")] private float rollCooldown = 2f;
+        [SerializeField, Tooltip("Скорость кувырка (можно править вручную)")]
+        private float rollSpeed = 6f;
+        [SerializeField, Tooltip("Кулдаун между кувырками (сек)")]
+        private float rollCooldown = 2f;
+        private float rollDuration;
 
         #endregion
 
@@ -77,21 +81,34 @@ namespace Resources.Scripts.Player
         private bool canRoll = true;
         private float rollCooldownRemaining;
 
+        private bool idleCycling;
+        private int idleIndex;
+
         #endregion
 
         #region Unity Methods
 
-        private void Start()
+        private void Awake()
         {
-            playerStats = GetComponent<PlayerStatsHandler>();
-
             if (skeletonAnimation == null)
                 skeletonAnimation = GetComponentInChildren<SkeletonAnimation>();
 
-            if (spriteRenderer == null)
-                spriteRenderer = GetComponent<SpriteRenderer>();
+            skeletonAnimation.state.Complete += HandleAnimationComplete;
 
-            PlayAnimation(IdleAnimationName, true);
+            // Подгоняем длительность кувырка под Spine‑анимацию
+            var anim = skeletonAnimation.Skeleton.Data.FindAnimation(JumpAnimationName);
+            rollDuration = anim != null ? anim.Duration : 0.3f;
+        }
+
+        private void OnDestroy()
+        {
+            skeletonAnimation.state.Complete -= HandleAnimationComplete;
+        }
+
+        private void Start()
+        {
+            playerStats = GetComponent<PlayerStatsHandler>();
+            PlayIdleSequence();
             UpdateCurrentSpeedDisplay();
 
             if (finishPoint != null)
@@ -102,27 +119,12 @@ namespace Resources.Scripts.Player
 
         private void Update()
         {
-            if (!isRolling)
-                UpdateMovement();
-
+            if (!isRolling) UpdateMovement();
             UpdateLightOuterRange();
             TickRollCooldown();
 
-            if (Input.GetKeyDown(KeyCode.LeftShift))
-                TryRoll();
-
-            if (!isRolling && Input.GetKeyDown(KeyCode.Space))
-                PlayAnimation(JumpAnimationName, false);
-        }
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            if (other.CompareTag(ETag.Fairy.ToString()))
-            {
-                var fairy = other.GetComponent<FairyController>();
-                fairy?.DestroyFairy();
-                playerStats.RestoreMana(20f);
-            }
+            if (Input.GetKeyDown(KeyCode.LeftShift)) TryRoll();
+            if (!isRolling && Input.GetKeyDown(KeyCode.Space)) StartRollAnimation();
         }
 
         #endregion
@@ -131,33 +133,35 @@ namespace Resources.Scripts.Player
 
         private void UpdateMovement()
         {
-            if ((LabyrinthMapController.Instance != null && LabyrinthMapController.Instance.IsMapActive)
-                || Input.GetKey(KeyCode.Space))
+            if ((LabyrinthMapController.Instance?.IsMapActive ?? false) || Input.GetKey(KeyCode.Space))
                 return;
 
             float h = joystick != null ? joystick.Horizontal : Input.GetAxis("Horizontal");
             float v = joystick != null ? joystick.Vertical : Input.GetAxis("Vertical");
             Vector2 dir = new Vector2(h, v);
 
-            if (dir.magnitude > 0.1f)
+            if (dir.magnitude > IdleThreshold)
             {
+                idleCycling = false;
                 lastMoveDirection = dir.normalized;
-                PlayAnimation(RunAnimationName, true);
 
-                // *** Инвертированная логика ***
-                // Если двигаемся вправо, исходная модель всё ещё «смотрит» влево,
-                // поэтому ставим ScaleX = -1, чтобы она повёрнулась вправо.
-                // Если двигаемся влево — ScaleX = +1.
-                skeletonAnimation.Skeleton.ScaleX = lastMoveDirection.x > 0f ? -1f : 1f;
+                if (dir.magnitude < SlowThreshold)
+                    PlayAnimation(SlowAnimationName, true);
+                else
+                    PlayAnimation(RunAnimationName, true);
+
+                // Флип через Spine API
+                skeletonAnimation.skeleton.FlipX = lastMoveDirection.x > 0f;
             }
             else
             {
-                PlayAnimation(IdleAnimationName, true);
+                if (!idleCycling)
+                    PlayIdleSequence();
             }
 
             float spd = playerStats.GetTotalMoveSpeed() * currentSlowMultiplier;
             UpdateCurrentSpeedDisplay(spd);
-            transform.Translate(dir * spd * Time.deltaTime, Space.World); // :(
+            transform.Translate(dir * spd * Time.deltaTime, Space.World);
         }
 
         private void UpdateCurrentSpeedDisplay(float speed = -1f)
@@ -175,6 +179,11 @@ namespace Resources.Scripts.Player
             StartCoroutine(RollCoroutine());
         }
 
+        private void StartRollAnimation()
+        {
+            PlayAnimation(JumpAnimationName, false);
+        }
+
         private IEnumerator RollCoroutine()
         {
             isRolling = true;
@@ -182,27 +191,20 @@ namespace Resources.Scripts.Player
             rollCooldownRemaining = rollCooldown;
             OnRollCooldownChanged?.Invoke(1f);
 
-            skeletonAnimation.enabled = false;
-            spriteRenderer.enabled = true;
-            spriteRenderer.sprite = rollSprite;
+            // Запускаем кувырок
+            PlayAnimation(JumpAnimationName, false);
 
             Vector2 dir = lastMoveDirection.normalized;
-            float rotSign = dir.x >= 0 ? -1f : 1f;
-            float rotSpeed = 360f / rollDuration * rotSign;
             float t = 0f;
             while (t < rollDuration)
             {
-                transform.Translate(dir * rollSpeed * Time.deltaTime, Space.World); // :(
-                transform.Rotate(0f, 0f, rotSpeed * Time.deltaTime);
+                // Только перемещение — без ручного вращения
+                transform.Translate(dir * rollSpeed * Time.deltaTime, Space.World);
                 t += Time.deltaTime;
                 yield return null;
             }
 
             transform.rotation = Quaternion.identity;
-            spriteRenderer.enabled = false;
-            skeletonAnimation.enabled = true;
-            PlayAnimation(IdleAnimationName, true);
-
             isRolling = false;
             yield return new WaitForSeconds(rollCooldownRemaining);
             canRoll = true;
@@ -343,9 +345,32 @@ namespace Resources.Scripts.Player
 
         private void PlayAnimation(string animName, bool loop)
         {
+            if (Array.IndexOf(IdleAnimations, animName) < 0)
+                idleCycling = false;
+
             var current = skeletonAnimation.state.GetCurrent(0);
             if (current != null && current.Animation.Name == animName) return;
             skeletonAnimation.state.SetAnimation(0, animName, loop);
+        }
+
+        private void HandleAnimationComplete(TrackEntry entry)
+        {
+            if (idleCycling && entry.Animation.Name == IdleAnimations[idleIndex])
+            {
+                idleIndex = (idleIndex + 1) % IdleAnimations.Length;
+                skeletonAnimation.state.SetAnimation(0, IdleAnimations[idleIndex], false);
+                return;
+            }
+
+            if (entry.Animation.Name == JumpAnimationName)
+                PlayIdleSequence();
+        }
+
+        private void PlayIdleSequence()
+        {
+            idleCycling = true;
+            idleIndex = 0;
+            skeletonAnimation.state.SetAnimation(0, IdleAnimations[idleIndex], false);
         }
 
         #endregion

@@ -980,12 +980,12 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ca3578d79c4549340ac3ee7d0ed3ea0d, type: 2}
-  - {fileID: 2100000, guid: f4a76f6e9609d5c42837f78187273e34, type: 2}
-  - {fileID: 2100000, guid: ca3578d79c4549340ac3ee7d0ed3ea0d, type: 2}
-  - {fileID: 2100000, guid: f4a76f6e9609d5c42837f78187273e34, type: 2}
-  - {fileID: 2100000, guid: ca3578d79c4549340ac3ee7d0ed3ea0d, type: 2}
-  - {fileID: 2100000, guid: f4a76f6e9609d5c42837f78187273e34, type: 2}
+  - {fileID: 2100000, guid: 1fd25638e491c564e9392df8206406a9, type: 2}
+  - {fileID: 2100000, guid: 95573110a25c9714cab073277d156f2c, type: 2}
+  - {fileID: 2100000, guid: 1fd25638e491c564e9392df8206406a9, type: 2}
+  - {fileID: 2100000, guid: 95573110a25c9714cab073277d156f2c, type: 2}
+  - {fileID: 2100000, guid: 1fd25638e491c564e9392df8206406a9, type: 2}
+  - {fileID: 2100000, guid: 95573110a25c9714cab073277d156f2c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1005,7 +1005,7 @@ MeshRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 3
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &2149160531394912608
 MonoBehaviour:
@@ -1019,7 +1019,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d247ba06193faa74d9335f5481b2b56c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skeletonDataAsset: {fileID: 11400000, guid: 445af8ed91fdd4f40a3384a310503054, type: 2}
+  skeletonDataAsset: {fileID: 11400000, guid: b04ea53e784193144a6063559605f346, type: 2}
   initialSkinName: 
   fixPrefabOverrideViaMeshFilter: 2
   initialFlipX: 0
@@ -1378,11 +1378,8 @@ MonoBehaviour:
   maxLightRange: 2
   isImmortal: 1
   skeletonAnimation: {fileID: 2149160531394912608}
-  spriteRenderer: {fileID: 2992285719649780434}
-  rollSprite: {fileID: 21300000, guid: e6c083e109074e040b89e6b627246fbf, type: 3}
   maxDarkSkullHits: 2
-  rollSpeed: 6
-  rollDuration: 0.3
+  rollSpeed: 2.5
   rollCooldown: 2
 --- !u!50 &3017650857843441594
 Rigidbody2D:
