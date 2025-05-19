@@ -15204,6 +15204,10 @@ PrefabInstance:
       propertyPath: manaSpendEffectPrefab
       value: 
       objectReference: {fileID: 1084327597910860270, guid: f8bd385ff85ec514ea38a03e711982ba, type: 3}
+    - target: {fileID: 5485085163093197689, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 7684459473974908381, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: m_Name
       value: Player
@@ -15255,6 +15259,10 @@ PrefabInstance:
     - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: rollSpeed
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
+      propertyPath: isImmortal
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9034907166800464094, guid: 5eaa2f8bdd6ce8544907c241d500a04d, type: 3}
       propertyPath: rollSprite

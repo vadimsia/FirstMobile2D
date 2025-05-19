@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using DG.Tweening;
 
 namespace Resources.Scripts.UI
 {
@@ -27,45 +28,29 @@ namespace Resources.Scripts.UI
             gameObject.SetActive(false);
         }
 
-        /// <summary>Показывает панель: fade-in + анимация точек.</summary>
+        /// <summary>Показывает панель: fade-in через DOTween + анимация точек.</summary>
         public void Show()
         {
-            gameObject.SetActive(true);
             StopAllCoroutines();
-            StartCoroutine(FadeIn());
+            gameObject.SetActive(true);
+            canvasGroup.alpha = 0f;
+            canvasGroup
+                .DOFade(1f, fadeDuration)
+                .SetUpdate(true);
+
             dotsCoroutine = StartCoroutine(AnimateDots());
         }
 
-        /// <summary>Скрывает панель: fade-out и останавливает анимацию точек.</summary>
+        /// <summary>Скрывает панель: fade-out через DOTween и останавливает анимацию точек.</summary>
         public void Hide()
         {
-            StopCoroutine(dotsCoroutine);
-            StartCoroutine(FadeOut());
-        }
+            if (dotsCoroutine != null)
+                StopCoroutine(dotsCoroutine);
 
-        private IEnumerator FadeIn()
-        {
-            float t = 0f;
-            while (t < fadeDuration)
-            {
-                t += Time.unscaledDeltaTime;
-                canvasGroup.alpha = Mathf.Lerp(0f, 1f, t / fadeDuration);
-                yield return null;
-            }
-            canvasGroup.alpha = 1f;
-        }
-
-        private IEnumerator FadeOut()
-        {
-            float t = 0f;
-            while (t < fadeDuration)
-            {
-                t += Time.unscaledDeltaTime;
-                canvasGroup.alpha = Mathf.Lerp(1f, 0f, t / fadeDuration);
-                yield return null;
-            }
-            canvasGroup.alpha = 0f;
-            gameObject.SetActive(false);
+            canvasGroup
+                .DOFade(0f, fadeDuration)
+                .SetUpdate(true)
+                .OnComplete(() => gameObject.SetActive(false));
         }
 
         private IEnumerator AnimateDots()

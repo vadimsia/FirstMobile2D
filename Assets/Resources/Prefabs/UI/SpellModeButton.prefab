@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4630848040286535554}
   - component: {fileID: 6547249749998976830}
   - component: {fileID: 1499400065284486878}
+  - component: {fileID: 6743488706739925640}
   m_Layer: 5
   m_Name: SpellModeButton
   m_TagString: Untagged
@@ -123,6 +124,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6743488706739925640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1961765853793461534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: accfaf7f1f9a3124d8d3b6ea2791a0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killOnDisable: 1
 --- !u!1 &6305590360169695819
 GameObject:
   m_ObjectHideFlags: 0

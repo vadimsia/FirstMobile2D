@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4351695515436794671}
   - component: {fileID: -3092035608056770585}
   - component: {fileID: -3608968783623948841}
+  - component: {fileID: 7087793859213758480}
   m_Layer: 0
   m_Name: WhiteCactus
   m_TagString: Untagged
@@ -185,3 +186,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   orderOffset: 1
+--- !u!114 &7087793859213758480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7691439864548489602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: accfaf7f1f9a3124d8d3b6ea2791a0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killOnDisable: 1

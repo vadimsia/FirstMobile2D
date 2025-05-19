@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using DG.Tweening;
 using Resources.Scripts.Data;
 using Resources.Scripts.Player;
 
@@ -33,6 +34,12 @@ namespace Resources.Scripts.GameManagers
             Instance = this;
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDestroy()
+        {
+            DOTween.Kill(this);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         /// <summary>
@@ -78,6 +85,12 @@ namespace Resources.Scripts.GameManagers
                 canvas != null ? canvas.transform : null,
                 false);
 
+            panel.transform.localScale = Vector3.zero;
+            panel.transform
+                 .DOScale(1f, 0.4f)
+                 .SetEase(Ease.OutBack)
+                 .SetId(this);
+
             var opts = availablePerks
                 .OrderBy(_ => Random.value)
                 .Take(3)
@@ -106,16 +119,13 @@ namespace Resources.Scripts.GameManagers
         /// </summary>
         public void OnLabyrinthCompleted()
         {
-            // Сначала попытаемся переключиться на следующий StageData
             bool hasNext = GameStageManager.Instance.LoadNextStage();
             if (hasNext)
             {
-                // Запустить новую серию арен этого этапа
                 StartStage();
             }
             else
             {
-                // Все этапы пройдены — можно, например, показать экран победы
                 Debug.Log("Поздравляем! Все этапы пройдены.");
             }
         }
@@ -133,7 +143,6 @@ namespace Resources.Scripts.GameManagers
                     stats?.ResetStats();
                 }
             }
-
             StartCoroutine(DelayedApplyAllPerks());
         }
 

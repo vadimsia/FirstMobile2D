@@ -1,11 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 namespace Resources.Scripts.UI
 {
     /// <summary>
     /// Эффект вылетающего текста затрат маны, который летит к краю заполненной полоски маны.
+    /// Добавлена пульсация при спавне.
     /// </summary>
     public class ManaSpendEffect : MonoBehaviour
     {
@@ -69,6 +71,10 @@ namespace Resources.Scripts.UI
                 return;
             }
 
+            // Пульс при спавне
+            rectTransform.localScale = Vector3.zero;
+            rectTransform.DOScale(1f, 0.3f).SetEase(Ease.OutBack);
+
             // 1) Стартовая позиция: из worldPosition игрока в локальные UI-координаты
             Vector3 screenPoint = Camera.main.WorldToScreenPoint(worldPosition);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -87,8 +93,6 @@ namespace Resources.Scripts.UI
                     // Мировые углы RectTransform полоски
                     Vector3[] corners = new Vector3[4];
                     targetUI.GetWorldCorners(corners);
-                    // corners[0]=низ‑лево, [1]=верх‑лево, [2]=верх‑право, [3]=низ‑право
-
                     Vector3 bottomLeft = corners[0];
                     Vector3 bottomRight = corners[3];
                     Vector3 topLeft = corners[1];
@@ -96,7 +100,7 @@ namespace Resources.Scripts.UI
                     float width  = bottomRight.x - bottomLeft.x;
                     float height = topLeft.y - bottomLeft.y;
 
-                    // Точка в мире на fill-краю: смещаем от bottomLeft на width*f по X и на height/2 по Y
+                    // Точка в мире на fill-краю
                     Vector3 fillWorldPos = new Vector3(
                         bottomLeft.x + width * f,
                         bottomLeft.y + height * 0.5f,

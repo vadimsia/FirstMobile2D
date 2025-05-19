@@ -1,37 +1,36 @@
 using UnityEngine;
 using TMPro;
+using DG.Tweening;
 
 namespace Resources.Scripts.UI
 {
+    /// <summary>
+    /// Плавающий и исчезающий текст уклонения.
+    /// Реализован через DOTween для плавности.
+    /// </summary>
+    [RequireComponent(typeof(TMP_Text))]
     public class EvasionText : MonoBehaviour
     {
         [SerializeField] private float floatSpeed = 1f;
         [SerializeField] private float fadeTime = 1f;
 
-        private TMP_Text tmpText;     
-        private Color originalColor;
+        private TMP_Text tmpText;
 
         private void Awake()
         {
             tmpText = GetComponent<TMP_Text>();
             if (tmpText == null)
                 Debug.LogError($"[{nameof(EvasionText)}] Не найден компонент TMP_Text на {gameObject.name}");
-            else
-                originalColor = tmpText.color;
         }
 
-        private void Update()
+        private void Start()
         {
-            transform.position += Vector3.up * floatSpeed * Time.deltaTime; // мне так удобно, отстань Rider :(
-
-            if (tmpText == null) return;
-
-            Color c = tmpText.color;
-            c.a -= Time.deltaTime / fadeTime;
-            tmpText.color = c;
-
-            if (c.a <= 0f)
-                Destroy(gameObject);
+            // Поднятие и исчезновение
+            Vector3 endPos = transform.position + Vector3.up * floatSpeed * fadeTime;
+            Sequence seq = DOTween.Sequence();
+            seq.Append(transform.DOMove(endPos, fadeTime).SetEase(Ease.Linear).SetUpdate(true));
+            seq.Join(tmpText.DOFade(0f, fadeTime).SetUpdate(true));
+            seq.OnComplete(() => Destroy(gameObject));
         }
     }
 }

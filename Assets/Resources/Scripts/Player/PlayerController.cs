@@ -7,6 +7,7 @@ using UnityEngine.Rendering.Universal;
 using Resources.Scripts.Labyrinth;
 using Spine;
 using Spine.Unity;
+using UObject = UnityEngine.Object;
 
 namespace Resources.Scripts.Player
 {
@@ -17,21 +18,18 @@ namespace Resources.Scripts.Player
     public class PlayerController : MonoBehaviour
     {
         #region Constants
-        private const string SlowAnimationName   = "Goes_01_001";
-        private const string RunAnimationName    = "Run_02_001";
-        private const string JumpAnimationName   = "Jamp_03_004";
+        private const string SlowAnimationName = "Goes_01_001";
+        private const string RunAnimationName  = "Run_02_001";
+        private const string JumpAnimationName = "Jamp_03_004";
         private static readonly string[] IdleAnimations = {
             "Idle_01_001", "Idle_01_002", "Idle_02_001", "Idle_02_002"
         };
-        private const float SlowThreshold        = 0.5f;
-        private const float IdleThreshold        = 0.1f;
+        private const float SlowThreshold = 0.5f;
+        private const float IdleThreshold = 0.1f;
         #endregion
 
         #region Inspector Fields
-
         [Header("Movement Settings")]
-        [SerializeField, Tooltip("Текущая скорость (для отладки)")]
-        private float currentSpeed;
         [SerializeField] private PlayerJoystick joystick;
         [SerializeField] private GameObject trapPrefab;
 
@@ -52,23 +50,17 @@ namespace Resources.Scripts.Player
         [SerializeField] private int maxDarkSkullHits = 2;
 
         [Header("Dodge Roll Settings")]
-        [SerializeField, Tooltip("Скорость кувырка (можно править вручную)")]
-        private float rollSpeed = 6f;
-        [SerializeField, Tooltip("Кулдаун между кувырками (сек)")]
-        private float rollCooldown = 2f;
+        [SerializeField, Tooltip("Скорость кувырка")]       private float rollSpeed = 6f;
+        [SerializeField, Tooltip("Кулдаун между кувырками")] private float rollCooldown = 2f;
         private float rollDuration;
-
         #endregion
 
         #region Public Events & Properties
-
         public event Action<float> OnRollCooldownChanged;
         public float RollCooldownDuration => rollCooldown;
-
         #endregion
 
         #region Private Fields
-
         private PlayerStatsHandler playerStats;
         private float currentSlowMultiplier = 1f;
         private Coroutine slowCoroutine;
@@ -84,32 +76,36 @@ namespace Resources.Scripts.Player
         private bool idleCycling;
         private int idleIndex;
 
+        // Сохраняем исходный ScaleX скелета
+        private float initialScaleX;
         #endregion
 
         #region Unity Methods
-
         private void Awake()
         {
             if (skeletonAnimation == null)
                 skeletonAnimation = GetComponentInChildren<SkeletonAnimation>();
+            if (skeletonAnimation == null)
+                Debug.LogError("PlayerController: SkeletonAnimation не назначен", this);
+
+            // Сохраняем, чтобы потом правильно флипать
+            initialScaleX = skeletonAnimation.Skeleton.ScaleX;
 
             skeletonAnimation.state.Complete += HandleAnimationComplete;
-
-            // Подгоняем длительность кувырка под Spine‑анимацию
             var anim = skeletonAnimation.Skeleton.Data.FindAnimation(JumpAnimationName);
             rollDuration = anim != null ? anim.Duration : 0.3f;
         }
 
         private void OnDestroy()
         {
-            skeletonAnimation.state.Complete -= HandleAnimationComplete;
+            if (skeletonAnimation != null)
+                skeletonAnimation.state.Complete -= HandleAnimationComplete;
         }
 
         private void Start()
         {
             playerStats = GetComponent<PlayerStatsHandler>();
             PlayIdleSequence();
-            UpdateCurrentSpeedDisplay();
 
             if (finishPoint != null)
                 initialDistance = Vector2.Distance(transform.position, finishPoint.position);
@@ -124,20 +120,19 @@ namespace Resources.Scripts.Player
             TickRollCooldown();
 
             if (Input.GetKeyDown(KeyCode.LeftShift)) TryRoll();
-            if (!isRolling && Input.GetKeyDown(KeyCode.Space)) StartRollAnimation();
+            if (!isRolling && Input.GetKeyDown(KeyCode.Space))
+                PlayAnimation(JumpAnimationName, false);
         }
-
         #endregion
 
         #region Movement Methods
-
         private void UpdateMovement()
         {
-            if ((LabyrinthMapController.Instance?.IsMapActive ?? false) || Input.GetKey(KeyCode.Space))
+            if (LabyrinthMapController.Instance?.IsMapActive == true || Input.GetKey(KeyCode.Space))
                 return;
 
             float h = joystick != null ? joystick.Horizontal : Input.GetAxis("Horizontal");
-            float v = joystick != null ? joystick.Vertical : Input.GetAxis("Vertical");
+            float v = joystick != null ? joystick.Vertical   : Input.GetAxis("Vertical");
             Vector2 dir = new Vector2(h, v);
 
             if (dir.magnitude > IdleThreshold)
@@ -145,43 +140,34 @@ namespace Resources.Scripts.Player
                 idleCycling = false;
                 lastMoveDirection = dir.normalized;
 
-                if (dir.magnitude < SlowThreshold)
-                    PlayAnimation(SlowAnimationName, true);
-                else
-                    PlayAnimation(RunAnimationName, true);
+                // Выбор анимации
+                PlayAnimation(
+                    dir.magnitude < SlowThreshold ? SlowAnimationName : RunAnimationName,
+                    true
+                );
 
-                // Флип через Spine API
-                skeletonAnimation.skeleton.FlipX = lastMoveDirection.x > 0f;
+                // Корректное отражение спрайта: по умолчанию смотрит влево
+                if (lastMoveDirection.x != 0f)
+                {
+                    float sign = -Mathf.Sign(lastMoveDirection.x);
+                    skeletonAnimation.Skeleton.ScaleX = Mathf.Abs(initialScaleX) * sign;
+                }
             }
-            else
+            else if (!idleCycling)
             {
-                if (!idleCycling)
-                    PlayIdleSequence();
+                PlayIdleSequence();
             }
 
             float spd = playerStats.GetTotalMoveSpeed() * currentSlowMultiplier;
-            UpdateCurrentSpeedDisplay(spd);
-            transform.Translate(dir * spd * Time.deltaTime, Space.World);
+            transform.Translate(dir * (spd * Time.deltaTime), Space.World);
         }
-
-        private void UpdateCurrentSpeedDisplay(float speed = -1f)
-        {
-            currentSpeed = speed < 0f ? playerStats.GetTotalMoveSpeed() : speed;
-        }
-
         #endregion
 
         #region Dodge Roll
-
         public void TryRoll()
         {
-            if (!canRoll || isRolling) return;
-            StartCoroutine(RollCoroutine());
-        }
-
-        private void StartRollAnimation()
-        {
-            PlayAnimation(JumpAnimationName, false);
+            if (canRoll && !isRolling)
+                StartCoroutine(RollCoroutine());
         }
 
         private IEnumerator RollCoroutine()
@@ -191,16 +177,11 @@ namespace Resources.Scripts.Player
             rollCooldownRemaining = rollCooldown;
             OnRollCooldownChanged?.Invoke(1f);
 
-            // Запускаем кувырок
             PlayAnimation(JumpAnimationName, false);
 
-            Vector2 dir = lastMoveDirection.normalized;
-            float t = 0f;
-            while (t < rollDuration)
+            for (float t = 0f; t < rollDuration; t += Time.deltaTime)
             {
-                // Только перемещение — без ручного вращения
-                transform.Translate(dir * rollSpeed * Time.deltaTime, Space.World);
-                t += Time.deltaTime;
+                transform.Translate(lastMoveDirection * (rollSpeed * Time.deltaTime), Space.World);
                 yield return null;
             }
 
@@ -213,20 +194,16 @@ namespace Resources.Scripts.Player
         private void TickRollCooldown()
         {
             if (rollCooldownRemaining <= 0f) return;
-            rollCooldownRemaining -= Time.deltaTime;
-            if (rollCooldownRemaining < 0f) rollCooldownRemaining = 0f;
+            rollCooldownRemaining = Mathf.Max(0f, rollCooldownRemaining - Time.deltaTime);
             OnRollCooldownChanged?.Invoke(rollCooldownRemaining / rollCooldown);
         }
-
         #endregion
 
         #region Light Methods
-
         private void UpdateLightOuterRange()
         {
             if (finishPoint == null || playerLight == null || initialDistance <= 0f) return;
-            float dist = Vector2.Distance(transform.position, finishPoint.position);
-            float t = 1f - Mathf.Clamp01(dist / initialDistance);
+            float t = 1f - Mathf.Clamp01(Vector2.Distance(transform.position, finishPoint.position) / initialDistance);
             playerLight.pointLightOuterRadius = Mathf.Lerp(baseLightRange, maxLightRange, t);
         }
 
@@ -243,26 +220,20 @@ namespace Resources.Scripts.Player
                 yield return null;
             }
         }
-
         #endregion
 
         #region Damage and Evasion
-
         public void TakeDamage(EnemyController enemy)
         {
-            if (isImmortal || isRolling) return;
-            if (playerStats.TryEvade(transform.position)) return;
-
+            if (isImmortal || isRolling || playerStats.TryEvade(transform.position)) return;
             playerStats.Health -= enemy.GetComponent<EnemyStatsHandler>().Damage;
-            if (playerStats.Health <= 0) { Die(); return; }
+            if (playerStats.Health <= 0f) { Die(); return; }
             if (enemy.pushPlayer)
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
         }
-
         #endregion
 
         #region Other Effects
-
         public void ApplySlow(float factor, float duration)
         {
             if (slowCoroutine != null) StopCoroutine(slowCoroutine);
@@ -276,10 +247,8 @@ namespace Resources.Scripts.Player
             currentSlowMultiplier = 1f;
         }
 
-        public void ApplyBinding(float duration)
-        {
+        public void ApplyBinding(float duration) =>
             StartCoroutine(BindingCoroutine(duration));
-        }
 
         private IEnumerator BindingCoroutine(float duration)
         {
@@ -289,10 +258,8 @@ namespace Resources.Scripts.Player
             currentSlowMultiplier = orig;
         }
 
-        public void Stun(float duration)
-        {
+        public void Stun(float duration) =>
             StartCoroutine(StunCoroutine(duration));
-        }
 
         private IEnumerator StunCoroutine(float duration)
         {
@@ -304,52 +271,45 @@ namespace Resources.Scripts.Player
 
         public void IncreaseSpeed(float mult)
         {
-            if (bonusActive) return;
-            StartCoroutine(SpeedBoostCoroutine(mult, 5f));
+            if (!bonusActive)
+                StartCoroutine(SpeedBoostCoroutine(mult, 5f));
         }
 
         private IEnumerator SpeedBoostCoroutine(float mult, float duration)
         {
             bonusActive = true;
             playerStats.ModifyMoveSpeedPercent((mult - 1f) * 100f);
-            UpdateCurrentSpeedDisplay();
             yield return new WaitForSeconds(duration);
             playerStats.ResetStats();
-            UpdateCurrentSpeedDisplay();
             bonusActive = false;
         }
 
         public void ReceiveDarkSkullHit()
         {
-            darkSkullHitCount++;
-            if (darkSkullHitCount >= maxDarkSkullHits) Die();
+            if (++darkSkullHitCount >= maxDarkSkullHits)
+                Die();
         }
 
-        public void ReceiveTrollHit()
-        {
-            Die();
-        }
+        public void ReceiveTrollHit() => Die();
 
         private void Die()
         {
-            var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(
-                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
-            foreach (var canvas in allCanvases)
+            foreach (var canvas in UObject.FindObjectsByType<Canvas>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
                 canvas.gameObject.SetActive(false);
+            }
             Destroy(gameObject);
         }
-
         #endregion
 
         #region Spine Helper
-
         private void PlayAnimation(string animName, bool loop)
         {
             if (Array.IndexOf(IdleAnimations, animName) < 0)
                 idleCycling = false;
-
             var current = skeletonAnimation.state.GetCurrent(0);
-            if (current != null && current.Animation.Name == animName) return;
+            if (current?.Animation.Name == animName) return;
             skeletonAnimation.state.SetAnimation(0, animName, loop);
         }
 
@@ -361,7 +321,6 @@ namespace Resources.Scripts.Player
                 skeletonAnimation.state.SetAnimation(0, IdleAnimations[idleIndex], false);
                 return;
             }
-
             if (entry.Animation.Name == JumpAnimationName)
                 PlayIdleSequence();
         }
@@ -372,7 +331,6 @@ namespace Resources.Scripts.Player
             idleIndex = 0;
             skeletonAnimation.state.SetAnimation(0, IdleAnimations[idleIndex], false);
         }
-
         #endregion
     }
 }

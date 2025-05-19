@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6154136566315066094}
   - component: {fileID: 8243059170250205946}
   - component: {fileID: 96096436554353322}
+  - component: {fileID: 2446886818159231581}
   m_Layer: 0
   m_Name: SmallCactus
   m_TagString: Untagged
@@ -185,3 +186,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   orderOffset: 1
+--- !u!114 &2446886818159231581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 883134882508290102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: accfaf7f1f9a3124d8d3b6ea2791a0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killOnDisable: 1

@@ -10,7 +10,7 @@ namespace Resources.Scripts.GameManagers
         public static StageData currentStageData { get; private set; }
 
         [Header("Все доступные StageData")]
-        [Tooltip("Перетащите сюда ваши SO StageData в порядке прохождения этапов")]
+        [Tooltip("Перетащить сюда SO StageData в порядке прохождения этапов")]
         [SerializeField] private StageData[] stages = null!;
 
         private int currentStageIndex = 0;

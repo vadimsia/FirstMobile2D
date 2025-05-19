@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using TMPro;
+using DG.Tweening;
 using Resources.Scripts.Data;
 
 namespace Resources.Scripts.GameManagers
@@ -27,14 +29,29 @@ namespace Resources.Scripts.GameManagers
 
         private void Start()
         {
-            // Получаем настройки для текущей арены из менеджера прогрессии
             currentSettings = StageProgressionManager.CurrentArenaSettings
                               ?? defaultArenaSettings;
 
             timer = currentSettings.survivalTime;
 
             if (clockHand != null)
+            {
                 clockHand.localRotation = Quaternion.Euler(0f, 0f, -90f);
+                clockHand
+                    .DOLocalRotate(new Vector3(0f, 0f, -90f), 0f)
+                    .SetId(this);
+            }
+
+            if (timerText != null)
+            {
+                var cg = timerText.GetComponent<CanvasGroup>()
+                         ?? timerText.gameObject.AddComponent<CanvasGroup>();
+                cg.alpha = 0f;
+                cg
+                  .DOFade(1f, 0.5f)
+                  .SetEase(Ease.InQuad)
+                  .SetId(this);
+            }
 
             InitializeArena();
 
@@ -44,6 +61,11 @@ namespace Resources.Scripts.GameManagers
                 edgeTreesParent.SetParent(transform, false);
                 PlantEdgeTrees();
             }
+        }
+
+        private void OnDestroy()
+        {
+            DOTween.Kill(this);
         }
 
         private void InitializeArena()
@@ -186,9 +208,7 @@ namespace Resources.Scripts.GameManagers
             var types = currentSettings.obstacleTypes;
             if (types == null || types.Length == 0)
             {
-                Debug.LogWarning(
-                    "At least one obstacle type is required for edge trees."
-                );
+                Debug.LogWarning("At least one obstacle type is required for edge trees.");
                 return;
             }
 
@@ -252,9 +272,7 @@ namespace Resources.Scripts.GameManagers
 
                     if (trigger == null)
                     {
-                        Debug.LogWarning(
-                            "No CircleCollider2D with IsTrigger found on tree prefab!"
-                        );
+                        Debug.LogWarning("No CircleCollider2D with IsTrigger found on tree prefab!");
                         FinalizeTree(tree);
                         placed++; totalPlaced++;
                         continue;
@@ -262,9 +280,8 @@ namespace Resources.Scripts.GameManagers
 
                     float worldRadius = trigger.radius *
                         Mathf.Max(tree.transform.lossyScale.x, tree.transform.lossyScale.y);
-                    var hits = Physics2D.OverlapCircleAll(pos, worldRadius)
-                                      .Where(c => c.isTrigger).ToArray();
 
+                    var hits = Physics2D.OverlapCircleAll(pos, worldRadius);
                     if (hits.Length <= 1)
                     {
                         FinalizeTree(tree);
@@ -297,10 +314,10 @@ namespace Resources.Scripts.GameManagers
 
             if (renderers.Length >= 2)
             {
-                var bottomSR = renderers[0];
-                var topSR    = renderers[1];
-                bottomSR.sortingOrder = baseOrder;
-                topSR.sortingOrder    = baseOrder + 1000;
+                var bottomSr = renderers[0];
+                var topSr    = renderers[1];
+                bottomSr.sortingOrder = baseOrder;
+                topSr.sortingOrder    = baseOrder + 1000;
             }
             else if (renderers.Length == 1)
             {
@@ -331,15 +348,16 @@ namespace Resources.Scripts.GameManagers
             {
                 float normalized = Mathf.Clamp01(timer / currentSettings.survivalTime);
                 float angle = -90f - (1f - normalized) * 360f;
-                clockHand.localRotation = Quaternion.Euler(0f, 0f, angle);
+                clockHand
+                    .DOLocalRotate(new Vector3(0f, 0f, angle), 0.1f)
+                    .SetEase(Ease.Linear)
+                    .SetId(this);
             }
         }
 
         public void OnPlayerDeath()
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(
-                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
-            );
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
 

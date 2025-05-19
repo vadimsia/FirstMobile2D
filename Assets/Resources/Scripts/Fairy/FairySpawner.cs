@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Resources.Scripts.Data;
+using Resources.Scripts.GameManagers;
 
 namespace Resources.Scripts.Fairy
 {
@@ -29,7 +30,6 @@ namespace Resources.Scripts.Fairy
         private int maxFairies = 5;
         private float spawnTimer;
 
-        // Кэш ID-шников
         private static readonly int ProgressID = Shader.PropertyToID("_Progress");
         private static readonly int AtrPosID   = Shader.PropertyToID("_AtrPos");
 
@@ -64,14 +64,15 @@ namespace Resources.Scripts.Fairy
         {
             if (prefab == null || transform.childCount >= maxFairies) return;
 
-            Vector3 pos = transform.position;
+            var pos = transform.position;
             if (randomizeSpawnPosition && spawnAreaRadius > 0f)
             {
-                Vector2 off = Random.insideUnitCircle * spawnAreaRadius;
+                var off = Random.insideUnitCircle * spawnAreaRadius;
                 pos += new Vector3(off.x, off.y, 0f);
             }
 
-            GameObject fx = Instantiate(prefab, pos, Quaternion.identity, transform);
+            var fx = CharacterScaleManager.Factory.CreateCharacter(prefab, pos, Quaternion.identity);
+            fx.transform.SetParent(transform, worldPositionStays: true);
             if (fx.TryGetComponent(out FairyController fairy))
                 fairy.Init(pos);
 
