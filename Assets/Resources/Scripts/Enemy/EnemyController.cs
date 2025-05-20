@@ -149,9 +149,13 @@ namespace Resources.Scripts.Enemy
         private void Start()
         {
             spawnPoint = transform.position;
-            player = GameObject.FindGameObjectWithTag("Player")?.GetComponent<PlayerController>();
-            if (player != null)
-                playerStats = player.GetComponent<PlayerStatsHandler>();
+            var go = GameObject.FindGameObjectWithTag("Player");
+            if (go != null)
+            {
+                player = go.GetComponent<PlayerController>();
+                if (player != null)
+                    playerStats = player.GetComponent<PlayerStatsHandler>();
+            }
 
             if (spriteRenderer == null)
                 spriteRenderer = GetComponent<SpriteRenderer>();
@@ -163,7 +167,8 @@ namespace Resources.Scripts.Enemy
 
         private void Update()
         {
-            if (player == null)
+            // Если игрок отсутствует или мёртв — патрулируем
+            if (player == null || player.IsDead)
             {
                 Patrol();
                 return;
@@ -193,7 +198,8 @@ namespace Resources.Scripts.Enemy
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if ((enemyType == EnemyType.DarkSkull || enemyType == EnemyType.Troll)
+            if (player != null
+                && (enemyType == EnemyType.DarkSkull || enemyType == EnemyType.Troll)
                 && other.CompareTag("Player"))
             {
                 isPlayerInTrigger = true;
@@ -202,7 +208,8 @@ namespace Resources.Scripts.Enemy
 
         private void OnTriggerExit2D(Collider2D other)
         {
-            if ((enemyType == EnemyType.DarkSkull || enemyType == EnemyType.Troll)
+            if (player != null
+                && (enemyType == EnemyType.DarkSkull || enemyType == EnemyType.Troll)
                 && other.CompareTag("Player"))
             {
                 isPlayerInTrigger = false;
@@ -216,7 +223,7 @@ namespace Resources.Scripts.Enemy
         private void ChasePlayer()
         {
             if (!isAttacking && animator != null
-                             && !animator.GetCurrentAnimatorStateInfo(0).IsName(walkAnimationName))
+                              && !animator.GetCurrentAnimatorStateInfo(0).IsName(walkAnimationName))
                 animator.Play(walkAnimationName);
 
             TurnToTarget(player.transform.position);
@@ -229,7 +236,7 @@ namespace Resources.Scripts.Enemy
         private void Patrol()
         {
             if (!isAttacking && animator != null
-                             && !animator.GetCurrentAnimatorStateInfo(0).IsName(walkAnimationName))
+                              && !animator.GetCurrentAnimatorStateInfo(0).IsName(walkAnimationName))
                 animator.Play(walkAnimationName);
 
             TurnToTarget(patrolTarget);
@@ -262,7 +269,9 @@ namespace Resources.Scripts.Enemy
 
         private void AttackPlayer()
         {
-            if (isAttacking) return;
+            // Если игрок недоступен, мёртв или уже атакуем — выходим
+            if (player == null || player.IsDead || isAttacking) return;
+
             float sinceLast = Time.time - lastAttackTime;
 
             switch (enemyType)
@@ -296,15 +305,15 @@ namespace Resources.Scripts.Enemy
 
             yield return new WaitForSeconds(attackCooldown);
 
-            // Наносим урон через TakeDamage (с учётом TryEvade)
-            player.TakeDamage(this);
-            if (debugLog) Debug.Log($"{enemyName} Standard attack.");
-
-            // Отталкивание
-            if (pushPlayer)
+            if (player != null && !player.IsDead)
             {
-                Vector3 dir = (player.transform.position - transform.position).normalized;
-                player.transform.position += dir * pushForceMultiplier;
+                player.TakeDamage(this);
+                if (debugLog) Debug.Log($"{enemyName} Standard attack.");
+                if (pushPlayer)
+                {
+                    Vector3 dir = (player.transform.position - transform.position).normalized;
+                    player.transform.position += dir * pushForceMultiplier;
+                }
             }
 
             speed = origSpeed;
@@ -365,6 +374,8 @@ namespace Resources.Scripts.Enemy
 
         public void SpawnProjectileEvent()
         {
+            if (player == null || player.IsDead) return;
+
             Vector3 spawnPos = attackPoint != null
                 ? attackPoint.position
                 : transform.position;
@@ -397,13 +408,11 @@ namespace Resources.Scripts.Enemy
 
         public void RegisterDarkSkullHitEvent()
         {
-            if (!isPlayerInTrigger || playerStats == null) return;
+            if (player == null || player.IsDead || !isPlayerInTrigger || playerStats == null) return;
 
-            // Попытка уклонения
             if (playerStats.TryEvade(transform.position))
                 return;
 
-            // Наносим урон DarkSkull
             player.ReceiveDarkSkullHit();
             if (pushPlayer)
             {
@@ -414,13 +423,11 @@ namespace Resources.Scripts.Enemy
 
         public void RegisterTrollHitEvent()
         {
-            if (!isPlayerInTrigger || playerStats == null) return;
+            if (player == null || player.IsDead || !isPlayerInTrigger || playerStats == null) return;
 
-            // Попытка уклонения
             if (playerStats.TryEvade(transform.position))
                 return;
 
-            // Наносим урон Troll
             player.ReceiveTrollHit();
             if (pushPlayer)
             {

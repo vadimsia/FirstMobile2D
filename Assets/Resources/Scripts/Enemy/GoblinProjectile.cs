@@ -14,27 +14,28 @@ namespace Resources.Scripts.Enemy
         [Tooltip("Lifetime of the projectile in seconds.")]
         [SerializeField] private float lifeTime = 5f;
         
+        /// <summary>
+        /// Устанавливает параметры полёта и связывания.
+        /// </summary>
         public void SetParameters(Vector2 direction, float projectileSpeed, float bindDuration, float projectileLifeTime, float projectileDamage)
         {
             moveDirection = direction;
             speed = projectileSpeed;
             bindingDuration = bindDuration;
             lifeTime = projectileLifeTime;
+            // projectileDamage передаётся, но тут не используется, т.к. урон снаряд не наносит
 
-            // Schedule automatic destruction after lifespan expires.
             Destroy(gameObject, lifeTime);
         }
 
         private void Awake()
         {
             rb = GetComponent<Rigidbody2D>();
-            // Use continuous collision detection for fast-moving projectiles.
             rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
 
         private void FixedUpdate()
         {
-            // Move the projectile via physics.
             rb.linearVelocity = moveDirection * speed;
         }
 
@@ -43,16 +44,15 @@ namespace Resources.Scripts.Enemy
             if (collision.CompareTag("Player"))
             {
                 var player = collision.GetComponent<PlayerController>();
-                if (player != null)
+                if (player != null && !player.IsDead)
                 {
-                    // Apply freezing effect on the player.
+                    // Проигрываем анимацию удара и связываем
+                    player.PlayDamageAnimation();
                     player.ApplyBinding(bindingDuration);
-                    Debug.Log($"Goblin projectile hit player. Freezing for {bindingDuration} seconds.");
                 }
 
                 Destroy(gameObject);
             }
-            // Destroy projectile on collision with anything except other enemies.
             else if (!collision.CompareTag("Enemy"))
             {
                 Destroy(gameObject);
