@@ -13,11 +13,14 @@ namespace Resources.Scripts.Menu
         [SerializeField] private Button[] optionButtons = null!;
         [SerializeField] private TextMeshProUGUI[] descriptionTexts = null!;
 
+        [Header("Иконки для опций (соответствие кнопкам)")]
+        [SerializeField] private Image[] iconImages = null!;
+
         private PerkDefinition[] options;
 
         /// <summary>
         /// Вызывается сразу после Instantiate панели.
-        /// Добавляет анимацию появления кнопок.
+        /// Добавляет анимацию появления кнопок и подставляет иконки.
         /// </summary>
         public void Setup(PerkDefinition[] perks)
         {
@@ -33,6 +36,14 @@ namespace Resources.Scripts.Menu
 
                 var btn = optionButtons[i];
                 descriptionTexts[i].text = perks[i].GetDescription();
+                
+                // Устанавливаем иконку из ScriptableObject
+                if (i < iconImages.Length && perks[i].Icon != null)
+                {
+                    iconImages[i].sprite = perks[i].Icon;
+                    iconImages[i].SetNativeSize();
+                }
+
                 int idx = i; // замыкание
 
                 // подготовка к анимации

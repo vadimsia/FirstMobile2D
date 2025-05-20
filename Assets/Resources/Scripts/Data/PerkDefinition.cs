@@ -17,9 +17,14 @@ namespace Resources.Scripts.Data
     [CreateAssetMenu(fileName = "PerkDefinition", menuName = "GameSettings/Perk Definition", order = 2)]
     public class PerkDefinition : ScriptableObject
     {
+        [Header("Основные параметры перка")]
         public PerkType Type;
         public PerkQuality Quality;
         public float Value;  // для процентных и числовых бонусов
+
+        [Header("Иконка перка")]
+        [Tooltip("Иконка, которая будет отображаться в UI при выборе перка")]
+        public Sprite Icon;
 
         public string GetDescription()
         {
