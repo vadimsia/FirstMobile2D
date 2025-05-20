@@ -53,8 +53,12 @@ namespace Resources.Scripts.Player
         [SerializeField] private int maxDarkSkullHits = 2;
 
         [Header("Dodge Roll Settings")]
-        [SerializeField, Tooltip("Скорость кувырка")]       private float rollSpeed = 6f;
-        [SerializeField, Tooltip("Кулдаун между кувырками")] private float rollCooldown = 2f;
+        [SerializeField, Tooltip("Дальность кувырка (в единицах Unity)")]
+        private float rollDistance = 6f;
+        [SerializeField, Tooltip("Кулдаун между кувырками")]
+        private float rollCooldown = 2f;
+        [SerializeField, Tooltip("Множитель скорости движения при кувырке (1 = стандартная скорость)"), Range(0.1f, 3f)]
+        private float rollSpeedMultiplier = 1f;
         private float rollDuration;
         #endregion
 
@@ -96,6 +100,7 @@ namespace Resources.Scripts.Player
             skeletonAnimation.state.Complete += HandleAnimationComplete;
 
             var anim = skeletonAnimation.Skeleton.Data.FindAnimation(JumpAnimationName);
+            // Длительность ролла берётся из анимации прыжка (кувырка)
             rollDuration = anim != null ? anim.Duration : 0.3f;
         }
 
@@ -180,11 +185,16 @@ namespace Resources.Scripts.Player
             rollCooldownRemaining = rollCooldown;
             OnRollCooldownChanged?.Invoke(1f);
 
-            PlayAnimation(JumpAnimationName, false);
+            // Проигрываем анимацию кувырка
+            skeletonAnimation.state.SetAnimation(0, JumpAnimationName, false);
+
+            // Вычисляем эффективную скорость: стандартная скорость ролла умножается на множитель
+            float baseSpeed = rollDistance / rollDuration;
+            float effectiveRollSpeed = baseSpeed * rollSpeedMultiplier;
 
             for (float t = 0f; t < rollDuration; t += Time.deltaTime)
             {
-                transform.Translate(lastMoveDirection * (rollSpeed * Time.deltaTime), Space.World);
+                transform.Translate(lastMoveDirection * (effectiveRollSpeed * Time.deltaTime), Space.World);
                 yield return null;
             }
 

@@ -1322,8 +1322,9 @@ MonoBehaviour:
   isImmortal: 1
   skeletonAnimation: {fileID: 2149160531394912608}
   maxDarkSkullHits: 2
-  rollSpeed: 2.5
+  rollDistance: 2
   rollCooldown: 2
+  rollSpeedMultiplier: 1
 --- !u!50 &3017650857843441594
 Rigidbody2D:
   serializedVersion: 5
