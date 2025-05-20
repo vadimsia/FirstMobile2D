@@ -5,7 +5,7 @@ namespace Resources.Scripts.Data
 {
     public enum PerkType
     {
-        ManaRegenDelayReduction,    // уменьшения времени на восстановление маны
+        ManaRegenAmountIncrease,    // увеличение количества восстанавливаемой маны в секунду
         MaxManaIncrease,            // увеличение маны
         MoveSpeedIncrease,          // скорость передвижения
         EvasionChanceIncrease,      // шанс уклонения
@@ -19,14 +19,14 @@ namespace Resources.Scripts.Data
     {
         public PerkType Type;
         public PerkQuality Quality;
-        public float Value;  // проценты для MoveSpeed и FairyPullRange
+        public float Value;  // для процентных и числовых бонусов
 
         public string GetDescription()
         {
             return Type switch
             {
-                PerkType.ManaRegenDelayReduction =>
-                    $"–{Value:F1}s задержки регена маны ({Quality})",
+                PerkType.ManaRegenAmountIncrease =>
+                    $"+{Value:F1} маны к регену ({Quality})",
                 PerkType.MaxManaIncrease =>
                     $"+{Value} к макс. мане ({Quality})",
                 PerkType.MoveSpeedIncrease =>
@@ -34,8 +34,8 @@ namespace Resources.Scripts.Data
                 PerkType.EvasionChanceIncrease =>
                     $"+{Value:F1}% к шансу уклонения ({Quality})",
                 PerkType.FairyPullRangeIncrease =>
-                    $"+{Value:F1}% к радиусу притягивания фей от базового ({Quality})",
-                _ => ""
+                    $"+{Value:F1}% к радиусу притягивания фей({Quality})",
+                _ => string.Empty
             };
         }
 
@@ -43,8 +43,8 @@ namespace Resources.Scripts.Data
         {
             switch (Type)
             {
-                case PerkType.ManaRegenDelayReduction:
-                    stats.ModifyManaRegenDelay(Value);
+                case PerkType.ManaRegenAmountIncrease:
+                    stats.ModifyManaRegenRate(Value);
                     break;
                 case PerkType.MaxManaIncrease:
                     stats.ModifyMaxMana(Value);
@@ -56,7 +56,6 @@ namespace Resources.Scripts.Data
                     stats.ModifyEvasion(Value);
                     break;
                 case PerkType.FairyPullRangeIncrease:
-                    // здесь мы увеличиваем радиус притягивания на Value процентов
                     stats.ModifyPullRangePercent(Value);
                     break;
             }

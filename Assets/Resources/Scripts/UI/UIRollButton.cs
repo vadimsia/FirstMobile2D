@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 using Resources.Scripts.Player;
 
 namespace Resources.Scripts.UI
 {
     /// <summary>
     /// Обновляет UI кнопки кувырка: radial fill + текст оставшегося времени.
+    /// Также добавляет анимацию нажатия кнопки.
     /// </summary>
     [RequireComponent(typeof(Button))]
     public class UIRollButton : MonoBehaviour
@@ -30,8 +32,12 @@ namespace Resources.Scripts.UI
 
         private void Start()
         {
-            // нажатие по кнопке вызывает TryRoll()
-            btn.onClick.AddListener(() => player?.TryRoll());
+            // нажатие по кнопке вызывает TryRoll() + анимация “пунча” масштаба
+            btn.onClick.AddListener(() =>
+            {
+                player?.TryRoll();
+                btn.transform.DOPunchScale(Vector3.one * 0.1f, 0.3f).SetEase(Ease.OutElastic);
+            });
 
             // подписываемся на изменение кулдауна
             if (player != null)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 using Resources.Scripts.Player;        // Доступ к playerStatsHandler
 using Resources.Scripts.SpellMode.Skills;
 using Resources.Scripts.UI;            // Для ManaSpendEffect
@@ -12,6 +13,7 @@ namespace Resources.Scripts.SpellMode
     /// <summary>
     /// Manages gesture drawing, recognition, and execution of spell skills.
     /// Делегирует звуковой ритм тиков в GlobalAudioManager.
+    /// Добавлены безопасные твины с SetId + Kill.
     /// </summary>
     public class DrawingManager : MonoBehaviour
     {
@@ -91,7 +93,24 @@ namespace Resources.Scripts.SpellMode
             audioManager = GlobalAudioManager.Instance;
 
             if (drawButton != null)
-                drawButton.onClick.AddListener(StartDrawing);
+            {
+                drawButton.onClick.AddListener(() =>
+                {
+                    if (drawButton.transform != null)
+                    {
+                        drawButton.transform
+                                  .DOPunchScale(Vector3.one * 0.1f, 0.3f)
+                                  .SetEase(Ease.OutElastic)
+                                  .SetId(this)
+                                  .SetUpdate(true);
+                    }
+                    StartDrawing();
+                });
+            }
+
+            if (manaBarUI == null)
+                manaBarUI = Object.FindFirstObjectByType<Canvas>()?
+                                  .GetComponentInChildren<RectTransform>();
 
             lastRecordedPosition = transform.position;
         }
@@ -116,7 +135,6 @@ namespace Resources.Scripts.SpellMode
             else
             {
                 noMovementTimer += Time.deltaTime;
-
                 if (hasMoved && noMovementTimer >= stopTimeThreshold)
                 {
                     if (enableComboMode)
@@ -124,6 +142,13 @@ namespace Resources.Scripts.SpellMode
                         ProcessPartialDrawing();
                         drawnPoints.Clear();
                         noMovementTimer = 0f;
+                        if (feedbackText?.transform != null)
+                        {
+                            feedbackText.transform
+                                         .DOPunchScale(Vector3.one * 1.1f, 0.2f)
+                                         .SetId(this)
+                                         .SetUpdate(true);
+                        }
                     }
                     else
                     {
@@ -142,6 +167,11 @@ namespace Resources.Scripts.SpellMode
                 if (comboTimer >= comboTimeWindow)
                     EndDrawing();
             }
+        }
+
+        private void OnDestroy()
+        {
+            DOTween.Kill(this);
         }
 
         #endregion
@@ -191,9 +221,15 @@ namespace Resources.Scripts.SpellMode
             }
 
             if (feedbackText != null)
+            {
                 feedbackText.text = "Drawing...";
+                feedbackText
+                    .DOFade(1f, 0.2f)
+                    .From(0f)
+                    .SetId(this)
+                    .SetUpdate(true);
+            }
 
-            // Запустить ритм тиков
             audioManager?.StartTickRhythm(maxDrawingTime);
         }
 
@@ -203,10 +239,17 @@ namespace Resources.Scripts.SpellMode
                 return;
 
             isDrawing = false;
-            if (feedbackText != null)
-                feedbackText.text = "Processing...";
 
-            // Остановить ритм тиков
+            if (feedbackText != null)
+            {
+                feedbackText.text = "Processing...";
+                feedbackText
+                    .DOFade(1f, 0.2f)
+                    .From(0f)
+                    .SetId(this)
+                    .SetUpdate(true);
+            }
+
             audioManager?.StopTickRhythm();
 
             if (drawnPoints.Count >= minPointsForRecognition)
@@ -275,7 +318,13 @@ namespace Resources.Scripts.SpellMode
                 recognizedSigns.Add(recognized);
                 comboTimer = 0f;
                 if (feedbackText != null)
+                {
                     feedbackText.text = $"Added: {recognized.id}";
+                    feedbackText.transform
+                                .DOPunchScale(Vector3.one * 1.1f, 0.2f)
+                                .SetId(this)
+                                .SetUpdate(true);
+                }
             }
         }
 
@@ -283,14 +332,11 @@ namespace Resources.Scripts.SpellMode
         {
             if (template.skillPrefab == null)
                 return;
-
             var skillObj = Instantiate(template.skillPrefab, transform.position, Quaternion.identity);
-            if (!isCombo)
-                return;
+            if (!isCombo) return;
 
             var skillComp = skillObj.GetComponent<SkillBase>();
-            if (skillComp == null)
-                return;
+            if (skillComp == null) return;
 
             string idLower = template.id.ToLower();
             if (idLower.Contains("circle") && skillComp is PushEnemiesSkill push)
@@ -303,9 +349,7 @@ namespace Resources.Scripts.SpellMode
 
         private void UpdateDrawingLine()
         {
-            if (currentLine == null)
-                return;
-
+            if (currentLine == null) return;
             currentLine.positionCount = drawnPoints.Count;
             for (int i = 0; i < drawnPoints.Count; i++)
                 currentLine.SetPosition(i, drawnPoints[i]);
@@ -320,20 +364,18 @@ namespace Resources.Scripts.SpellMode
                 Debug.LogError("[DrawingManager] manaSpendEffectPrefab is not assigned!");
                 return;
             }
-
             if (mainCanvas == null)
             {
-                mainCanvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
+                mainCanvas = Object.FindFirstObjectByType<Canvas>();
                 if (mainCanvas == null)
                 {
                     Debug.LogError("[DrawingManager] Could not find any Canvas in the scene!");
                     return;
                 }
             }
-
             if (manaBarUI == null)
             {
-                Debug.LogError("[DrawingManager] manaBarUI is not assigned!");
+                Debug.LogError("[DrawingManager] manaBarUI is not assigned or destroyed!");
                 return;
             }
 

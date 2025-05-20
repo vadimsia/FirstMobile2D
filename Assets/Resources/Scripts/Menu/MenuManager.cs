@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 namespace Resources.Scripts.Menu
 {
@@ -12,7 +13,11 @@ namespace Resources.Scripts.Menu
         {
             if (stageSelectionPanel != null)
             {
+                stageSelectionPanel.transform.localScale = Vector3.zero;
                 stageSelectionPanel.SetActive(true);
+                stageSelectionPanel.transform
+                    .DOScale(1f, 0.4f)
+                    .SetEase(Ease.OutBack);
             }
         }
 
@@ -20,13 +25,20 @@ namespace Resources.Scripts.Menu
         public void OnOptionsButton()
         {
             Debug.Log("Опции пока не реализованы");
+            // можно добавить всплывающее уведомление позже
         }
 
         // Вызывается кнопкой "Выход"
         public void OnExitButton()
         {
-            Application.Quit();
-            Debug.Log("Выход из игры");
+            // анимация небольшого "пранча"
+            transform
+                .DOPunchScale(Vector3.one * 0.05f, 0.3f, 10, 0.5f)
+                .OnComplete(() =>
+                {
+                    Application.Quit();
+                    Debug.Log("Выход из игры");
+                });
         }
     }
 }

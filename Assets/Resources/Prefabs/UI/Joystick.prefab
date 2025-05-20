@@ -101,6 +101,7 @@ GameObject:
   - component: {fileID: 8631376261926318415}
   - component: {fileID: 8125011222821322946}
   - component: {fileID: 386596725528801089}
+  - component: {fileID: 7174760184287671420}
   m_Layer: 5
   m_Name: Joystick
   m_TagString: Untagged
@@ -193,3 +194,16 @@ SortingGroup:
   m_SortingLayer: 0
   m_SortingOrder: 2
   m_SortAtRoot: 0
+--- !u!114 &7174760184287671420
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6299401557340688970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: accfaf7f1f9a3124d8d3b6ea2791a0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killOnDisable: 1

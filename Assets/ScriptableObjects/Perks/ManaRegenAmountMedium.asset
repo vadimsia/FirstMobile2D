@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aefd8cd3bd5838643ac1ec15fbaffc44, type: 3}
-  m_Name: ManaRegenDelaySmall
+  m_Name: ManaRegenAmountMedium
   m_EditorClassIdentifier: 
   Type: 0
-  Quality: 0
-  Value: 1
+  Quality: 1
+  Value: 2

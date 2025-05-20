@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 using Resources.Scripts.Data;
 using Resources.Scripts.GameManagers;
 
@@ -16,6 +17,7 @@ namespace Resources.Scripts.Menu
 
         /// <summary>
         /// Вызывается сразу после Instantiate панели.
+        /// Добавляет анимацию появления кнопок.
         /// </summary>
         public void Setup(PerkDefinition[] perks)
         {
@@ -29,13 +31,23 @@ namespace Resources.Scripts.Menu
                     continue;
                 }
 
+                var btn = optionButtons[i];
                 descriptionTexts[i].text = perks[i].GetDescription();
                 int idx = i; // замыкание
-                optionButtons[i].onClick.AddListener(() =>
+
+                // подготовка к анимации
+                btn.transform.localScale = Vector3.zero;
+                btn.onClick.AddListener(() =>
                 {
                     StageProgressionManager.Instance.OnPerkChosen(options[idx]);
                     Destroy(gameObject);
                 });
+
+                // появление с задержкой
+                btn.transform
+                    .DOScale(1f, 0.3f)
+                    .SetEase(Ease.OutBack)
+                    .SetDelay(0.1f * i);
             }
         }
     }

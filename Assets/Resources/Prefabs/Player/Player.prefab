@@ -1250,6 +1250,7 @@ GameObject:
   - component: {fileID: 1957564526145093592}
   - component: {fileID: 1901290873122885768}
   - component: {fileID: 7490868119604115255}
+  - component: {fileID: 4687057463107404156}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1369,7 +1370,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a43795d082424d3f97d7fc559e4a940, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentSpeed: 0
   joystick: {fileID: 8125011222821322946, guid: b9ce74a2d514fc842ab3de1eb5fc6c15, type: 3}
   trapPrefab: {fileID: 726999753017517549, guid: 2883cba0652d4754ab1bd2e5e075b41d, type: 3}
   playerLight: {fileID: 0}
@@ -1525,6 +1525,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pullSpeed: 7
   absorbRadius: 0.2
+--- !u!114 &4687057463107404156
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7684459473974908381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: accfaf7f1f9a3124d8d3b6ea2791a0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killOnDisable: 1
 --- !u!1 &7686015707831549786
 GameObject:
   m_ObjectHideFlags: 0

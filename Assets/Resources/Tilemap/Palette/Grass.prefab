@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5553131840468040413}
   - component: {fileID: 1754814669349651772}
+  - component: {fileID: 3948270929947716786}
   m_Layer: 0
   m_Name: Grass
   m_TagString: Untagged
@@ -45,6 +46,19 @@ Grid:
   m_CellGap: {x: 0, y: 0, z: 0}
   m_CellLayout: 0
   m_CellSwizzle: 0
+--- !u!114 &3948270929947716786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492741213760964675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: accfaf7f1f9a3124d8d3b6ea2791a0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killOnDisable: 1
 --- !u!1 &4439488378264566420
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,9 +365,9 @@ Tilemap:
   - m_RefCount: 15
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   - m_RefCount: 1
-    m_Data: {r: 0.9696523, g: 0.44397065, b: 0.5461017, a: 1}
+    m_Data: {r: 0.856339, g: 0.5941139, b: 0.6054046, a: 1}
   - m_RefCount: 1
-    m_Data: {r: 0.9673034, g: 0.64586824, b: 0.731987, a: 1}
+    m_Data: {r: 0.78544235, g: 0.5163275, b: 0.5301784, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}

@@ -35,7 +35,7 @@ namespace Resources.Scripts.Fairy
         private Material dissolveMat;
 
         // Pull-логика
-        private bool isBeingPulled = false;
+        private bool isBeingPulled;
         private Vector3 pullTarget;
         private float pullSpeed;
         private float initialPullDistance;

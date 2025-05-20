@@ -96,6 +96,7 @@ GameObject:
   - component: {fileID: 333539230050100756}
   - component: {fileID: 8597949904099503756}
   - component: {fileID: 5014397386377253627}
+  - component: {fileID: 3213152991804717568}
   m_Layer: 0
   m_Name: Crystall
   m_TagString: Untagged
@@ -240,6 +241,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   crystalLight: {fileID: 4982110317342725950}
   size: 0.5
+  radiusMultiplier: 10
+  dynamicUpdate: 0
+  updateSpeed: 2
+--- !u!114 &3213152991804717568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7997255332534555669}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: accfaf7f1f9a3124d8d3b6ea2791a0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killOnDisable: 1
 --- !u!1 &9085213109845941023
 GameObject:
   m_ObjectHideFlags: 0
@@ -284,7 +301,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4743d3f43aa4495b8d272529b1386a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fairyPrefabs:
-  - {fileID: 9040814901501652586, guid: e0f54fca43cf64cf4ac71b2fb400662c, type: 3}
-  maxFairies: 5
-  spawnTimer: 5
+  arenaSettings: {fileID: 0}
+  spawnInterval: 5
+  spawnAreaRadius: 0
+  randomizeSpawnPosition: 0
+  debugLog: 0
