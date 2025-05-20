@@ -1,3 +1,4 @@
+// PlayerController.cs
 using UnityEngine;
 using System;
 using System.Collections;
@@ -18,11 +19,13 @@ namespace Resources.Scripts.Player
     public class PlayerController : MonoBehaviour
     {
         #region Constants
-        private const string SlowAnimationName = "Goes_01_001";
-        private const string RunAnimationName  = "Run_02_001";
-        private const string JumpAnimationName = "Jamp_03_004";
+        private const string SlowAnimationName   = "Goes_01_001";
+        private const string RunAnimationName    = "Run_02_001";
+        private const string JumpAnimationName   = "Jamp_04_001";
+        private const string DamageAnimationName = "Damage_01_003";
+        private const string DeathAnimationName  = "Death_04";
         private static readonly string[] IdleAnimations = {
-            "Idle_01_001", "Idle_01_002", "Idle_02_001", "Idle_02_002"
+            "Idle_02_003"
         };
         private const float SlowThreshold = 0.5f;
         private const float IdleThreshold = 0.1f;
@@ -50,14 +53,19 @@ namespace Resources.Scripts.Player
         [SerializeField] private int maxDarkSkullHits = 2;
 
         [Header("Dodge Roll Settings")]
-        [SerializeField, Tooltip("Скорость кувырка")]       private float rollSpeed = 6f;
-        [SerializeField, Tooltip("Кулдаун между кувырками")] private float rollCooldown = 2f;
+        [SerializeField, Tooltip("Дальность кувырка (в единицах Unity)")]
+        private float rollDistance = 6f;
+        [SerializeField, Tooltip("Кулдаун между кувырками")]
+        private float rollCooldown = 2f;
+        [SerializeField, Tooltip("Множитель скорости движения при кувырке (1 = стандартная скорость)"), Range(0.1f, 3f)]
+        private float rollSpeedMultiplier = 1f;
         private float rollDuration;
         #endregion
 
         #region Public Events & Properties
         public event Action<float> OnRollCooldownChanged;
         public float RollCooldownDuration => rollCooldown;
+        public bool IsDead { get; private set; }
         #endregion
 
         #region Private Fields
@@ -88,11 +96,11 @@ namespace Resources.Scripts.Player
             if (skeletonAnimation == null)
                 Debug.LogError("PlayerController: SkeletonAnimation не назначен", this);
 
-            // Сохраняем, чтобы потом правильно флипать
             initialScaleX = skeletonAnimation.Skeleton.ScaleX;
-
             skeletonAnimation.state.Complete += HandleAnimationComplete;
+
             var anim = skeletonAnimation.Skeleton.Data.FindAnimation(JumpAnimationName);
+            // Длительность ролла берётся из анимации прыжка (кувырка)
             rollDuration = anim != null ? anim.Duration : 0.3f;
         }
 
@@ -115,6 +123,8 @@ namespace Resources.Scripts.Player
 
         private void Update()
         {
+            if (IsDead) return;
+
             if (!isRolling) UpdateMovement();
             UpdateLightOuterRange();
             TickRollCooldown();
@@ -140,13 +150,11 @@ namespace Resources.Scripts.Player
                 idleCycling = false;
                 lastMoveDirection = dir.normalized;
 
-                // Выбор анимации
                 PlayAnimation(
                     dir.magnitude < SlowThreshold ? SlowAnimationName : RunAnimationName,
                     true
                 );
 
-                // Корректное отражение спрайта: по умолчанию смотрит влево
                 if (lastMoveDirection.x != 0f)
                 {
                     float sign = -Mathf.Sign(lastMoveDirection.x);
@@ -166,7 +174,7 @@ namespace Resources.Scripts.Player
         #region Dodge Roll
         public void TryRoll()
         {
-            if (canRoll && !isRolling)
+            if (canRoll && !isRolling && !IsDead)
                 StartCoroutine(RollCoroutine());
         }
 
@@ -177,11 +185,16 @@ namespace Resources.Scripts.Player
             rollCooldownRemaining = rollCooldown;
             OnRollCooldownChanged?.Invoke(1f);
 
-            PlayAnimation(JumpAnimationName, false);
+            // Проигрываем анимацию кувырка
+            skeletonAnimation.state.SetAnimation(0, JumpAnimationName, false);
+
+            // Вычисляем эффективную скорость: стандартная скорость ролла умножается на множитель
+            float baseSpeed = rollDistance / rollDuration;
+            float effectiveRollSpeed = baseSpeed * rollSpeedMultiplier;
 
             for (float t = 0f; t < rollDuration; t += Time.deltaTime)
             {
-                transform.Translate(lastMoveDirection * (rollSpeed * Time.deltaTime), Space.World);
+                transform.Translate(lastMoveDirection * (effectiveRollSpeed * Time.deltaTime), Space.World);
                 yield return null;
             }
 
@@ -223,11 +236,30 @@ namespace Resources.Scripts.Player
         #endregion
 
         #region Damage and Evasion
+
+        /// <summary>
+        /// Вызывается врагом, когда должен проигрываться только эффект "получения удара" без урона.
+        /// </summary>
+        public void PlayDamageAnimation()
+        {
+            if (IsDead) return;
+            var entry = skeletonAnimation.state.SetAnimation(0, DamageAnimationName, false);
+            skeletonAnimation.state.AddAnimation(0, IdleAnimations[0], true, entry.Animation.Duration);
+        }
+
         public void TakeDamage(EnemyController enemy)
         {
-            if (isImmortal || isRolling || playerStats.TryEvade(transform.position)) return;
+            if (isImmortal || isRolling || IsDead || playerStats.TryEvade(transform.position)) return;
+
             playerStats.Health -= enemy.GetComponent<EnemyStatsHandler>().Damage;
-            if (playerStats.Health <= 0f) { Die(); return; }
+            if (playerStats.Health <= 0f)
+            {
+                Die();
+                return;
+            }
+
+            PlayDamageAnimation();
+
             if (enemy.pushPlayer)
                 EntityUtils.MakeDash(transform, transform.position - enemy.transform.position);
         }
@@ -294,12 +326,25 @@ namespace Resources.Scripts.Player
 
         private void Die()
         {
-            foreach (var canvas in UObject.FindObjectsByType<Canvas>(
-                FindObjectsInactive.Include, FindObjectsSortMode.None))
+            IsDead = true;
+            enabled = false;
+
+            skeletonAnimation.state.Complete -= HandleAnimationComplete;
+            skeletonAnimation.state.ClearTracks();
+
+            var entry = skeletonAnimation.state.SetAnimation(0, DeathAnimationName, false);
+            entry.Complete += trackEntry =>
             {
-                canvas.gameObject.SetActive(false);
-            }
-            Destroy(gameObject);
+                if (trackEntry.Animation.Name == DeathAnimationName)
+                {
+                    foreach (var canvas in UObject.FindObjectsByType<Canvas>(
+                        FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    {
+                        canvas.gameObject.SetActive(false);
+                    }
+                    Destroy(gameObject);
+                }
+            };
         }
         #endregion
 
